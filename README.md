@@ -87,19 +87,51 @@ O sistema segue o padrão arquitetural **MVC (Model-View-Controller)** com um se
 
 #### Diagrama de Casos de Uso
 
-<img src="./assets/DiagramaCasosDeUso">
+<img src="./assets/DiagramaCasosDeUso.png">
 
-#### Histórias do Usuário
+#### 👤 Histórias de Usuário (User Stories)
 
-<img src="./assets/HistoriasDeUsuarios">
+**US01 — Cadastro de Cliente**
+> Como um usuário não registrado, quero me cadastrar no sistema fornecendo meus dados de identificação e financeiros, para que eu tenha permissão de utilizar os serviços de aluguel.
+
+- **Regra de Negócio:** O cadastro deve armazenar obrigatoriamente RG, CPF, Nome, Endereço, Profissão, entidades empregadoras e os rendimentos auferidos (limitado ao máximo de 3).
+
+---
+
+**US02 — Introdução de Pedido**
+> Como um cliente cadastrado, quero introduzir um novo pedido de aluguel no sistema, para solicitar a locação de um automóvel.
+
+- **Regra de Negócio:** O pedido deve ficar pendente de análise financeira pelos agentes logo após a introdução.
+
+---
+
+**US03 — Gestão Própria de Pedidos (Cliente)**
+> Como um cliente, quero consultar, modificar ou cancelar meus pedidos de aluguel ativos, para ter controle total sobre as minhas solicitações na plataforma.
+
+---
+
+**US04 — Avaliação Financeira (Agente)**
+> Como um agente (empresa ou banco), quero analisar os pedidos introduzidos do ponto de vista financeiro, para emitir um parecer (positivo ou negativo) sobre a execução do contrato.
+
+---
+
+**US05 — Modificação de Pedidos (Agente)**
+> Como um agente (empresa ou banco), quero poder modificar os pedidos de aluguel dos clientes, para realizar ajustes contratuais ou financeiros antes da aprovação.
+
+---
+
+**US06 — Concessão de Crédito e Propriedade**
+> Como um agente bancário, quero associar um contrato de crédito aprovado ao aluguel de um automóvel, para financiar a operação do cliente.
+
+- **Regra de Negócio:** Dependendo do contrato firmado, o sistema deve registrar a propriedade do automóvel em nome do cliente, da empresa ou do banco.
 
 #### Diagrama de Classes
 
-<img src="./assets/DiagramaDeClasses">
+<img src="./assets/DiagramaDeClasses.png">
 
 #### Diagrama de Pacotes
 
-<img src="./assets/DiagramaDePacotes">
+<img src="./assets/DiagramaDePacotes.png">
 
 ---
 
