@@ -127,7 +127,7 @@ O sistema segue o padrão arquitetural **MVC (Model-View-Controller)** com um se
 
 #### Diagrama de Classes
 
-<img src="./assets/DiagramaDeClasses.png">
+<img src="./assets/UML.png">
 
 #### Diagrama de Pacotes
 
