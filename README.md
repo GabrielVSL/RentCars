@@ -141,7 +141,7 @@ O sistema segue o padrão arquitetural **MVC (Model-View-Controller)** com um se
 
 #### Diagrama de Componentes
 
-<!-- Insira o Diagrama de Componentes aqui -->
+<img src="./assets/DiagramaComponentes.png">
 
 #### CRUD do Cliente
 
