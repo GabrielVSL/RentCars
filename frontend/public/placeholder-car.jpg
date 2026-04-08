@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#e0e7ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#c7d2fe;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect fill="url(#bg)" width="800" height="600"/>
+  <g fill="none" stroke="#64748b" stroke-width="2">
+    <path d="M150 400 L200 350 L600 350 L650 400 Z"/>
+    <path d="M180 400 L180 280 Q180 250 210 250 L590 250 Q620 250 620 280 L620 400"/>
+    <circle cx="220" cy="420" r="30"/>
+    <circle cx="580" cy="420" r="30"/>
+    <path d="M250 280 L250 260 L260 250"/>
+    <path d="M550 280 L550 260 L540 250"/>
+  </g>
+  <text x="400" y="520" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#475569">Car Image Placeholder</text>
+</svg>
