@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Car } from '@/types';
 import { POPULAR_CITIES } from '@/types';
 
@@ -101,7 +102,7 @@ export const MOCK_CARS: Car[] = [
 ];
 
 export const useCarFilter = (cars: Car[], searchParams: any) => {
-  const filteredCars = React.useMemo(() => {
+  const filteredCars = useMemo(() => {
     return cars.filter(car => {
       if (searchParams.location && car.location.id !== searchParams.location.id) {
         return false;
@@ -113,7 +114,7 @@ export const useCarFilter = (cars: Car[], searchParams: any) => {
     });
   }, [cars, searchParams]);
 
-  const sortedCars = React.useMemo(() => {
+  const sortedCars = useMemo(() => {
     return [...filteredCars].sort((a, b) => {
       if (a.availability !== b.availability) {
         return a.availability ? -1 : 1;

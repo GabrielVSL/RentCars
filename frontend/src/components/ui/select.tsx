@@ -49,8 +49,6 @@ export const Select = React.forwardRef<HTMLDivElement, SelectProps>(
           option.description?.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }, [options, searchQuery]);
-
-    const visibleCount = filteredOptions.length;
     const selectedOption = options.find(opt => opt.value === value);
 
     React.useEffect(() => {
@@ -59,41 +57,6 @@ export const Select = React.forwardRef<HTMLDivElement, SelectProps>(
       }
     }, [open]);
 
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-      switch (e.key) {
-        case 'ArrowDown':
-          e.preventDefault();
-          if (!open) {
-            setOpen(true);
-          } else {
-            setHighlightedIndex(prev => prev < visibleCount - 1 ? prev + 1 : prev);
-          }
-          break;
-        case 'ArrowUp':
-          e.preventDefault();
-          if (open) {
-            setHighlightedIndex(prev => (prev > 0 ? prev - 1 : 0));
-          }
-          break;
-        case 'Enter':
-          e.preventDefault();
-          if (open && highlightedIndex >= 0 && filteredOptions[highlightedIndex]) {
-            onValueChange(filteredOptions[highlightedIndex].value);
-            setOpen(false);
-            setSearchQuery('');
-          } else {
-            setOpen(prev => !prev);
-          }
-          break;
-        case 'Escape':
-          setOpen(false);
-          setSearchQuery('');
-          break;
-        case 'Tab':
-          setOpen(false);
-          break;
-      }
-    };
 
     React.useEffect(() => {
       if (open && highlightedIndex >= 0 && listboxRef.current) {

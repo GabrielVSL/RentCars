@@ -1,5 +1,5 @@
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+
 import Layout from '@/components/layout/Layout.tsx';
 import { SearchHero } from '@/features/booking';
 import { CarCard, MOCK_CARS } from '@/features/cars';
@@ -55,7 +55,7 @@ function CarsPage() {
               key={car.id}
               car={car}
               index={index}
-              searchParams={searchParams}
+             
               onSelect={handleCarSelect}
             />
           ))}

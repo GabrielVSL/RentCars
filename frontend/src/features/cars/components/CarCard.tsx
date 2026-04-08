@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/utils/cn';
+import type { Car } from '@/types';
 
 const StarIcon = ({ className }: { className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className={className}>
@@ -44,9 +45,8 @@ const CarIcon = ({ className }: { className?: string }) => (
 );
 
 interface CarCardProps {
-  car: any;
-  onSelect: (car: any) => void;
-  searchParams: any;
+  car: Car;
+  onSelect: (car: Car) => void;
   index: number;
 }
 
