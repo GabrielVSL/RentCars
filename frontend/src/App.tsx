@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 
 import Layout from '@/components/layout/Layout.tsx';
+import HomeLayout from '@/components/layout/HomeLayout.tsx';
 import { SearchHero } from '@/features/booking';
 import { CarCard, MOCK_CARS } from '@/features/cars';
 
@@ -80,10 +81,16 @@ export default function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Layout />}>
+        {/* Home uses a fullscreen cinematic layout with floating header */}
+        <Route path="/" element={<HomeLayout />}>
           <Route index element={<HomePage />} />
-          <Route path="/cars" element={<CarsPage />} />
         </Route>
+
+        {/* All other pages use standard layout with header */}
+        <Route path="/cars" element={<Layout />}>
+          <Route index element={<CarsPage />} />
+        </Route>
+
         <Route path="/*" element={<NotFound />} />
       </Routes>
     </Router>
