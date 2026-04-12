@@ -26,7 +26,7 @@ interface HeroVideoProps {
 
 export default function HeroVideo({ videoSrc, posterSrc }: HeroVideoProps) {
   return (
-    <section className="relative min-h-screen overflow-hidden">
+    <section className="relative h-screen overflow-hidden">
       {/* Background Video - Fullscreen autoplay loop muted */}
       <div className="absolute inset-0 bg-black">
         <video
@@ -44,11 +44,11 @@ export default function HeroVideo({ videoSrc, posterSrc }: HeroVideoProps) {
       {/* Cinematic dark vignette - frames the center for the car */}
       <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/30 to-black/60" />
 
-      {/* Bottom lift gradient - protects text, creates seamless transition */}
+      {/* Bottom lift gradient - protects text */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
 
-      {/* Hero Typography - Bottom third positioning, pushed below fixed header */}
-      <div className="relative container mx-auto px-4 h-full flex flex-col justify-end pt-20 md:pt-24 pb-16 md:pb-24 lg:pb-32">
+      {/* Hero Typography - Bottom third positioning */}
+      <div className="relative container mx-auto px-4 h-full flex flex-col justify-end pt-20 md:pt-24 pb-16 md:pb-24 lg:pb-32 z-20">
         <motion.div
           initial="hidden"
           animate="visible"
@@ -68,7 +68,7 @@ export default function HeroVideo({ videoSrc, posterSrc }: HeroVideoProps) {
             </div>
           </motion.div>
 
-          {/* Main headline - left-aligned, drop-shadow for legibility */}
+          {/* Main headline */}
           <motion.div variants={fadeInUp} className="mb-6 md:mb-8">
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold leading-[0.95] tracking-tight">
               <span className="block text-white drop-shadow-xl mb-2">
@@ -87,7 +87,7 @@ export default function HeroVideo({ videoSrc, posterSrc }: HeroVideoProps) {
 
           {/* Supporting copy */}
           <motion.div variants={fadeInUp}>
-            <p className="text-base md:text-lg lg:text-xl text-white/90 max-w-2xl leading-relaxed drop-shadow-md">
+            <p className="text-base md:text-lg lg:text-xl text-white/90 max-w-2xl leading-relaxed drop-shadow-md font-light">
               Compare preços de mais de 1000 veículos em todo o Brasil.
               <span className="text-cyan-300 font-medium block mt-3 md:mt-4 drop-shadow-sm">
                 Preços transparentes • Cancelamento grátis • KM livre
@@ -97,9 +97,9 @@ export default function HeroVideo({ videoSrc, posterSrc }: HeroVideoProps) {
         </motion.div>
       </div>
 
-      {/* Scroll indicator - subtle cue to continue */}
+      {/* Scroll indicator */}
       <motion.div
-        className="absolute bottom-4 md:bottom-6 left-1/2 -translate-x-1/2"
+        className="absolute bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 z-20"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1.5, duration: 0.6 }}
@@ -116,6 +116,9 @@ export default function HeroVideo({ videoSrc, posterSrc }: HeroVideoProps) {
           />
         </motion.div>
       </motion.div>
+
+      {/* SEAMLESS FADE: Otimizado para garantir o preto puro na base e evitar quebra de pixels */}
+      <div className="absolute -bottom-1 left-0 right-0 h-40 bg-gradient-to-t from-black via-black/80 to-transparent z-10 pointer-events-none" />
     </section>
   );
 }
@@ -123,16 +126,16 @@ export default function HeroVideo({ videoSrc, posterSrc }: HeroVideoProps) {
 function SparklesIcon({ className }: { className?: string }) {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-      <path d="m12 3-1.9 5.3"/>
-      <path d="M6.8 8.5 12 3"/>
-      <path d="m12 3 1.9 5.3"/>
-      <path d="M17.2 8.5 12 3"/>
-      <path d="M12 5.8v4.3"/>
-      <path d="M12 21v-5.3"/>
-      <path d="M6.8 15.5 12 21"/>
-      <path d="m12 21 1.9-5.3"/>
-      <path d="M17.2 15.5 12 21"/>
-      <path d="M12 18.2v-4.3"/>
+      <path d="m12 3-1.9 5.3" />
+      <path d="M6.8 8.5 12 3" />
+      <path d="m12 3 1.9 5.3" />
+      <path d="M17.2 8.5 12 3" />
+      <path d="M12 5.8v4.3" />
+      <path d="M12 21v-5.3" />
+      <path d="M6.8 15.5 12 21" />
+      <path d="m12 21 1.9-5.3" />
+      <path d="M17.2 15.5 12 21" />
+      <path d="M12 18.2v-4.3" />
     </svg>
   );
 }

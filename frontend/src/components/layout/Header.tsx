@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface HeaderProps {
   transparent?: boolean;
@@ -32,11 +32,23 @@ const XIcon = ({ className }: { className?: string }) => (
 
 export default function Header({ transparent = false }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 50);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Transparent variant — hero pages (floating over video)
+  // When scrolled > 50px, apply frosted glass effect
   if (transparent) {
+    const bgClass = isScrolled
+      ? 'bg-black/60 backdrop-blur-md transition-all duration-300'
+      : 'bg-transparent';
+
     return (
-      <header className="absolute top-0 left-0 right-0 z-50 bg-transparent">
+      <header className={`absolute top-0 left-0 right-0 z-50 ${bgClass}`}>
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             <a href="/" className="flex items-center gap-2 text-xl font-bold text-white drop-shadow-lg">
