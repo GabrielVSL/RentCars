@@ -26,3 +26,33 @@ replay_pid*
 # claude
 .openclaude-profile.json
 .claude
+
+.idea/
+*.iml
+.vscode/
+*.log
+
+# --- JAVA & GRADLE ---
+.gradle/
+build/
+bin/
+
+# --- SEGURANÇA (Obrigatório) ---
+.env
+.env.local
+*.jks
+*.p12
+*.pem
+
+# --- IDEs ---
+.idea/
+*.iml
+.vscode/
+.settings/
+.classpath
+.project
+.nb-gradle/
+
+# --- SISTEMA OPERACIONAL ---
+Thumbs.db
+.DS_Store
