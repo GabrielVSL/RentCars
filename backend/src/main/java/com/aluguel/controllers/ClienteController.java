@@ -4,9 +4,13 @@ import com.aluguel.facades.ClienteFacade;
 import com.aluguel.models.Cliente;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.annotation.*;
+import io.micronaut.security.annotation.Secured;
+import io.micronaut.security.rules.SecurityRule;
+
 import java.util.List;
 
 @Controller("/api/clientes")
+@Secured(SecurityRule.IS_ANONYMOUS)
 public class ClienteController {
 
     private final ClienteFacade facade;

@@ -1,22 +1,39 @@
 package com.aluguel.models;
 
 import io.micronaut.serde.annotation.Serdeable;
+import jakarta.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
 
 @Serdeable
+@Entity // Avisa o banco que isso é uma Tabela
+@Table(name = "clientes") // Nome da tabela no banco
 public class Cliente {
+
+    @Id // Chave Primária
+    @GeneratedValue(strategy = GenerationType.IDENTITY) // Auto-incremento (1, 2, 3...)
     private Long id;
+
+    @Column(nullable = false)
     private String nome;
+
+    @Column(nullable = false, unique = true)
     private String cpf;
+
+    @Column(nullable = false)
     private String rg;
+
     private String endereco;
     private String profissao;
+
+    // Relacionamento para a lista de rendimentos (máximo 3, validado no código)
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "cliente_rendimentos", joinColumns = @JoinColumn(name = "cliente_id"))
     private List<Rendimento> rendimentos = new ArrayList<>();
 
-    // Construtores, Getters e Setters
     public Cliente() {}
 
+    // Getters e Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

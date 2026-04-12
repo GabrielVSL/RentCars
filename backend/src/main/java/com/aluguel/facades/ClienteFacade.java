@@ -39,7 +39,12 @@ public class ClienteFacade {
     }
 
     public boolean excluir(Long id) {
-        return repository.deleteById(id);
+        // Pergunta ao banco se o ID existe
+        if (repository.existsById(id)) {
+            repository.deleteById(id); // Deleta de fato
+            return true; // Avisa o Controller que deu certo
+        }
+        return false; // Avisa o Controller que o ID não existia
     }
 
     // Centralizamos a regra de negócio em um método privado!

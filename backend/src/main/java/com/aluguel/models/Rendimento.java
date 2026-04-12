@@ -1,13 +1,15 @@
 package com.aluguel.models;
 
 import io.micronaut.serde.annotation.Serdeable;
+import jakarta.persistence.Embeddable;
 
 @Serdeable
+@Embeddable // Diz que esses dados vão ser embutidos na tabela auxiliar de rendimentos
 public class Rendimento {
+
     private String empregadora;
     private Double valor;
 
-    // Construtores, Getters e Setters
     public Rendimento() {}
 
     public String getEmpregadora() { return empregadora; }
