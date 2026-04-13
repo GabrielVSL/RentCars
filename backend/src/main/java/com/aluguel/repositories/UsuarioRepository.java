@@ -7,7 +7,5 @@ import java.util.Optional;
 
 @Repository
 public interface UsuarioRepository extends CrudRepository<Usuario, Long> {
-    
-    // O Micronaut Data cria a consulta SQL automaticamente só pelo nome do método!
     Optional<Usuario> findByEmail(String email);
 }

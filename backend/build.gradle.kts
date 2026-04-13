@@ -93,7 +93,19 @@ tasks.named<io.micronaut.gradle.docker.NativeImageDockerfile>("dockerfileNative"
 }
 
 
-
+// Faz o comando 'gradlew run' ler o arquivo .env automaticamente
+tasks.named<JavaExec>("run") {
+    val envFile = file(".env")
+    if (envFile.exists()) {
+        envFile.readLines().forEach { line ->
+            if (line.isNotBlank() && !line.startsWith("#")) {
+                val key = line.substringBefore("=").trim()
+                val value = line.substringAfter("=").trim()
+                environment(key, value)
+            }
+        }
+    }
+}
 
 
 

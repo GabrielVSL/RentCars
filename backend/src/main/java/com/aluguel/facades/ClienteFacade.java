@@ -39,12 +39,11 @@ public class ClienteFacade {
     }
 
     public boolean excluir(Long id) {
-        // Pergunta ao banco se o ID existe
         if (repository.existsById(id)) {
-            repository.deleteById(id); // Deleta de fato
-            return true; // Avisa o Controller que deu certo
+            repository.deleteById(id);
+            return true;
         }
-        return false; // Avisa o Controller que o ID não existia
+        return false;
     }
 
     // Centralizamos a regra de negócio em um método privado!
@@ -66,7 +65,7 @@ private void validarRegrasDeNegocio(Cliente cliente) {
         if (cliente.getRendimentos() != null) {
             cliente.getRendimentos().removeIf(r -> 
                 (r.getEmpregadora() == null || r.getEmpregadora().trim().isEmpty()) && 
-                (r.getValor() == null || r.getValor() == 0.0)
+                (r.getValor() == null || r.getValor().compareTo(java.math.BigDecimal.ZERO) == 0)
             );
         }
     }
