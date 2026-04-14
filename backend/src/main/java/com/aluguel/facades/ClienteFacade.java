@@ -39,7 +39,11 @@ public class ClienteFacade {
     }
 
     public boolean excluir(Long id) {
-        return repository.deleteById(id);
+        if (repository.existsById(id)) {
+            repository.deleteById(id);
+            return true;
+        }
+        return false;
     }
 
     // Centralizamos a regra de negócio em um método privado!
@@ -61,7 +65,7 @@ private void validarRegrasDeNegocio(Cliente cliente) {
         if (cliente.getRendimentos() != null) {
             cliente.getRendimentos().removeIf(r -> 
                 (r.getEmpregadora() == null || r.getEmpregadora().trim().isEmpty()) && 
-                (r.getValor() == null || r.getValor() == 0.0)
+                (r.getValor() == null || r.getValor().compareTo(java.math.BigDecimal.ZERO) == 0)
             );
         }
     }
