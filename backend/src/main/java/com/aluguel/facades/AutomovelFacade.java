@@ -37,7 +37,7 @@ public class AutomovelFacade {
         Automovel carro = automovelRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Carro não encontrado"));
 
-        // Segurança: Só o dono (Empresa logada) pode editar
+        // Segurança mantida...
         if (!carro.getProprietario().getEmail().equals(emailLogado)) {
             throw new IllegalStateException("Você não tem permissão para editar este veículo.");
         }
@@ -48,6 +48,7 @@ public class AutomovelFacade {
         carro.setPlaca(dadosNovos.getPlaca());
         carro.setMatricula(dadosNovos.getMatricula());
         carro.setImageUrl(dadosNovos.getImageUrl()); // Salva a URL do Cloudinary
+        carro.setPrecoPorDia(dadosNovos.getPrecoPorDia());
 
         return automovelRepository.update(carro);
     }

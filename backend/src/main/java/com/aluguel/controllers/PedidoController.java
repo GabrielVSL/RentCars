@@ -39,4 +39,46 @@ public class PedidoController {
             return HttpResponse.badRequest(e.getMessage());
         }
     }
+
+    @Get
+    @Secured({"ROLE_EMPRESA", "ROLE_BANCO"})
+    public HttpResponse<?> listarPedidos(Principal principal) {
+        return HttpResponse.ok(facade.listarPedidosParaAgente(principal.getName()));
+    }
+
+    @Get("/ocupados/{automovelId}")
+    @Secured(io.micronaut.security.rules.SecurityRule.IS_ANONYMOUS)
+    public HttpResponse<?> buscarDatasOcupadas(@PathVariable Long automovelId) {
+        try {
+            return HttpResponse.ok(facade.buscarDatasOcupadas(automovelId));
+        } catch (Exception e) {
+            return HttpResponse.badRequest(e.getMessage());
+        }
+    }
+
+    @Put("/{id}/modificar")
+    @Secured({"ROLE_EMPRESA", "ROLE_BANCO"})
+    public HttpResponse<?> modificar(@PathVariable Long id, @Body Pedido pedido, Principal principal) {
+        try {
+            return HttpResponse.ok(facade.modificarPedidoAgente(id, principal.getName(), pedido));
+        } catch (Exception e) {
+            return HttpResponse.badRequest(e.getMessage());
+        }
+    }
+
+    @Put("/{id}/responder-revisao")
+    @Secured("ROLE_CLIENTE")
+    public HttpResponse<?> responderRevisao(@PathVariable Long id, @QueryValue boolean aceito, Principal principal) {
+        try {
+            return HttpResponse.ok(facade.responderContrapropostaCliente(id, principal.getName(), aceito));
+        } catch (Exception e) {
+            return HttpResponse.badRequest(e.getMessage());
+        }
+    }
+
+    @Get("/meus")
+    @Secured("ROLE_CLIENTE")
+    public HttpResponse<?> listarMeusPedidos(Principal principal) {
+        return HttpResponse.ok(facade.listarPedidosDoCliente(principal.getName()));
+    }
 }

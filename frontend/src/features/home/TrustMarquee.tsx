@@ -1,52 +1,38 @@
+'use client';
 import { motion } from 'framer-motion';
 
 const brandLogos = [
-  "/logos/vw.webp",
-  "/logos/fiat.svg",
-  "/logos/chevrolet.webp",
-  "/logos/byd.svg",
-  "/logos/bmw.svg",
-  "/logos/audi.svg",
-  "/logos/jeep.svg",
-  "/logos/toyota.svg",
-  "/logos/honda.svg",
-  "/logos/lexus.svg",
-  "/logos/renault.svg",
-  "/logos/tesla.svg"
+  "/logos/vw.webp", "/logos/fiat.svg", "/logos/chevrolet.webp",
+  "/logos/byd.svg", "/logos/bmw.svg", "/logos/audi.webp",
+  "/logos/jeep.svg", "/logos/toyota.svg", "/logos/tesla.svg"
 ];
 
 export function TrustMarquee() {
   return (
-    <div className="relative py-12 bg-white overflow-hidden flex items-center border-y border-gray-100">
-      
-      {/* Gradientes laterais para suavizar a entrada/saída */}
-      <div className="absolute left-0 top-0 bottom-0 w-24 md:w-40 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
-      <div className="absolute right-0 top-0 bottom-0 w-24 md:w-40 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
+    <div className="relative py-16 bg-transparent overflow-hidden">
+      <div className="container mx-auto px-6 mb-10">
+        <p className="text-center text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">
+          Experiência garantida pelas melhores montadoras
+        </p>
+      </div>
 
-      <motion.div
-        className="flex whitespace-nowrap gap-16 md:gap-24 items-center"
-        initial={{ x: 0 }}
-        animate={{ x: "-50%" }} // Estratégia sênior: move exatamente metade do conteúdo duplicado
-        transition={{
-          repeat: Infinity,
-          repeatType: "loop",
-          duration: 25,
-          ease: "linear",
-        }}
-      >
-        {/* Duplicamos o array para um loop infinito sem saltos */}
-        {[...brandLogos, ...brandLogos].map((src, i) => (
-          <div key={i} className="flex-shrink-0 flex items-center justify-center w-32 md:w-40 h-16">
-            <img 
-              src={src} 
-              alt="Logo Marca"
-              className="max-h-full max-w-full object-contain"
-              // Se a imagem falhar por algum motivo, esse log aparecerá no console (F12)
-              onError={(e) => console.error(`Falha ao carregar: ${src}`)}
-            />
-          </div>
-        ))}
-      </motion.div>
+      <div className="relative flex items-center">
+        {/* Máscaras de gradiente para suavizar as bordas */}
+        <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-[#F5F5F7] to-transparent z-10" />
+        <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-[#F5F5F7] to-transparent z-10" />
+
+        <motion.div
+          className="flex whitespace-nowrap gap-20 items-center opacity-40 hover:opacity-80 transition-opacity duration-700"
+          animate={{ x: ["0%", "-50%"] }}
+          transition={{ repeat: Infinity, duration: 30, ease: "linear" }}
+        >
+          {[...brandLogos, ...brandLogos].map((src, i) => (
+            <div key={i} className="w-32 h-12 flex items-center justify-center grayscale hover:grayscale-0 transition-all duration-500">
+              <img src={src} alt="Brand" className="max-h-full max-w-full object-contain" />
+            </div>
+          ))}
+        </motion.div>
+      </div>
     </div>
   );
 }

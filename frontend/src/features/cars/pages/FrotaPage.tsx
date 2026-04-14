@@ -16,6 +16,7 @@ interface Automovel {
   ano: number;
   placa: string;
   imageUrl?: string; // Agora recebemos a imagem do Java
+  precoPorDia: number; // Novo campo de preço
 }
 
 export default function FrotaPage() {
@@ -119,7 +120,8 @@ export default function FrotaPage() {
       marca: carro.marca,
       modelo: carro.modelo,
       ano: carro.ano,
-      placa: carro.placa
+      placa: carro.placa,
+      precoPorDia: carro.precoPorDia // Puxa o preço ao editar
     });
     setIsModalOpen(true);
   };
@@ -128,7 +130,7 @@ export default function FrotaPage() {
     setIsModalOpen(false);
     setCarroEditando(null);
     setPreviewImage(null);
-    reset({ matricula: '', marca: '', modelo: '', ano: new Date().getFullYear(), placa: '' });
+    reset({ matricula: '', marca: '', modelo: '', ano: new Date().getFullYear(), placa: '', precoPorDia: 0 }); // Zera o preço
   };
 
   const carrosFiltrados = carros.filter(c => 
@@ -247,8 +249,8 @@ export default function FrotaPage() {
                   </div>
 
                   {/* Formulário */}
-                  <form id="carForm" onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-2 gap-5">
-                    <div className="col-span-2">
+                  <form id="carForm" onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="col-span-1 md:col-span-2">
                       <label className="block text-sm font-medium text-slate-700 mb-1.5">Matrícula</label>
                       <input {...register('matricula')} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400 transition-all" />
                       {errors.matricula && <span className="text-red-500 text-xs mt-1 flex items-center gap-1"><AlertCircle size={12}/> {errors.matricula.message}</span>}
@@ -268,6 +270,12 @@ export default function FrotaPage() {
                     <div>
                       <label className="block text-sm font-medium text-slate-700 mb-1.5">Placa</label>
                       <input {...register('placa')} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400" />
+                    </div>
+                    {/* --- NOVO CAMPO: PREÇO POR DIA --- */}
+                    <div className="col-span-1 md:col-span-2">
+                      <label className="block text-sm font-medium text-slate-700 mb-1.5">Preço por Dia (R$)</label>
+                      <input type="number" step="0.01" {...register('precoPorDia', { valueAsNumber: true })} placeholder="Ex: 150.00" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-slate-900/10 focus:border-slate-400" />
+                      {errors.precoPorDia && <span className="text-red-500 text-xs mt-1 flex items-center gap-1"><AlertCircle size={12}/> {errors.precoPorDia.message}</span>}
                     </div>
                   </form>
                 </div>

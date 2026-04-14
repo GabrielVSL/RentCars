@@ -2,6 +2,7 @@ package com.aluguel.models;
 
 import io.micronaut.serde.annotation.Serdeable;
 import jakarta.persistence.*;
+import java.math.BigDecimal;
 
 @Serdeable
 @Entity
@@ -30,9 +31,13 @@ public class Automovel {
     @Column
     private String imageUrl; // URL vinda do Cloudinary
 
+    @Column(nullable = false)
+    private BigDecimal precoPorDia;
+
     @ManyToOne
     @JoinColumn(name = "proprietario_id", nullable = false)
     private Usuario proprietario;
+    
 
     public Automovel() {}
 
@@ -53,4 +58,6 @@ public class Automovel {
     public void setProprietario(Usuario proprietario) { this.proprietario = proprietario; }
     public String getImageUrl() { return imageUrl; }
     public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+    public BigDecimal getPrecoPorDia() { return precoPorDia; }
+    public void setPrecoPorDia(BigDecimal precoPorDia) { this.precoPorDia = precoPorDia; }
 }

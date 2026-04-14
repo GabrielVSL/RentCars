@@ -2,6 +2,8 @@ package com.aluguel.models;
 
 import io.micronaut.serde.annotation.Serdeable;
 import jakarta.persistence.*;
+
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Serdeable
@@ -28,20 +30,25 @@ public class Pedido {
     @JoinColumn(name = "agente_id")
     private Agente agenteAvaliador;
 
-// As datas que o cliente escolhe no calendário do site
+    // As datas que o cliente escolhe no calendário do site
     @Column(nullable = false)
     private LocalDateTime dataInicio;
 
     @Column(nullable = false)
     private LocalDateTime dataFim;
 
-    // A data que o sistema gera sozinha (não precisa nem vir do React)
-    @Column(nullable = false)
-    private LocalDateTime dataPedido = LocalDateTime.now();
 
     // PENDENTE, APROVADO, REJEITADO, CANCELADO
     @Column(nullable = false)
-    private String status = "PENDENTE"; 
+    private LocalDateTime dataPedido = LocalDateTime.now();
+
+    // ADICIONADO: O valor financeiro da reserva
+    @Column(nullable = false)
+    private BigDecimal valorTotal;
+
+    // ALTERADO: O pedido agora nasce na esteira da Empresa
+    @Column(nullable = false)
+    private String status = "PENDENTE_EMPRESA";
 
     // Getters e Setters de Datas Corrigidos
     public LocalDateTime getDataInicio() { return dataInicio; }
@@ -66,4 +73,6 @@ public class Pedido {
     public void setAgenteAvaliador(Agente agenteAvaliador) { this.agenteAvaliador = agenteAvaliador; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    public BigDecimal getValorTotal() { return valorTotal; }
+    public void setValorTotal(BigDecimal valorTotal) { this.valorTotal = valorTotal; }
 }
