@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react'; // IMPORTANTE: useEffect importado
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUIStore } from '@/store/useUIStore';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -22,21 +22,25 @@ export default function AuthModule() {
   const springConfig = { type: 'spring', stiffness: 300, damping: 30, mass: 0.8 };
 
   const { register: registerLogin, handleSubmit: handleLoginSubmit } = useForm<LoginFormInputs>({ resolver: zodResolver(loginSchema) });
+  
   const { register: registerSignup, control, handleSubmit: handleSignupSubmit, setValue, watch } = useForm<RegisterFormInputs>({
     resolver: zodResolver(registerSchema),
-    defaultValues: { rendimentos: [], role: 'CLIENTE' } 
+    defaultValues: { 
+      // MÁGICA AQUI: Inicia com um item em branco para o campo já aparecer aberto!
+      rendimentos: [{ empregadora: '', valor: '' as unknown as number }], 
+      role: 'CLIENTE' 
+    } 
   });
+  
   const { fields, append, remove } = useFieldArray({ control, name: "rendimentos" });
   const selectedRole = watch('role');
 
-  // TRAVAMENTO DE TELA: Quando abre o modal, desativa o scroll do site
   useEffect(() => {
     if (authView) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
     }
-    // Cleanup quando o componente desmonta
     return () => { document.body.style.overflow = 'unset'; };
   }, [authView]);
 
@@ -96,14 +100,12 @@ export default function AuthModule() {
             layout="size" 
             className="relative flex flex-col bg-white border border-slate-100 shadow-[0_40px_80px_-20px_rgba(0,0,0,0.15)] pointer-events-auto overflow-hidden"
           >
-            {/* O EFEITO DE RESPIRAÇÃO FOI REMOVIDO DESTA LINHA ABAIXO */}
             <motion.div className="flex flex-col h-full">
               <div className="flex items-center justify-between p-8 pb-4">
                 <div>
                   <h2 className="text-3xl font-black text-slate-900 tracking-tight">{authView === 'login' ? 'Bem-vindo.' : 'Criar Conta.'}</h2>
                   <p className="text-slate-500 text-sm mt-1 font-medium">{authView === 'login' ? 'Acesse sua conta para continuar' : 'Sua jornada começa aqui'}</p>
                 </div>
-                {/* AGORA ELE APARECE SEMPRE! */}
                 <button onClick={closeAuth} className="text-slate-400 hover:text-slate-700 bg-slate-50 rounded-full p-2 transition-colors"><X size={20} /></button>
               </div>
 
@@ -158,21 +160,29 @@ export default function AuthModule() {
                         {selectedRole === 'CLIENTE' && (
                           <div className="space-y-4 pt-4 border-t border-slate-100">
                             <input {...registerSignup('profissao')} placeholder="Sua Profissão" className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 font-medium outline-none focus:border-blue-500 focus:bg-white" />
-                            <p className="text-xs font-black text-slate-400 uppercase tracking-widest">Rendimentos Mensais</p>
-                            {fields.map((field, index) => (
-                              <div key={field.id} className="flex gap-2">
-                                <input {...registerSignup(`rendimentos.${index}.empregadora`)} placeholder="Empresa" className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium" />
-                                <input {...registerSignup(`rendimentos.${index}.valor`, { valueAsNumber: true })} type="number" placeholder="R$" className="w-28 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium" />
-                                <button type="button" onClick={() => remove(index)} className="text-slate-400 hover:text-red-500 p-2"><Trash2 size={18} /></button>
+                            
+                            <div>
+                              <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Rendimentos Mensais</p>
+                              <div className="space-y-3">
+                                {fields.map((field, index) => (
+                                  <div key={field.id} className="flex gap-2">
+                                    <input {...registerSignup(`rendimentos.${index}.empregadora`)} placeholder="Nome da Empresa" className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium outline-none focus:border-blue-500 focus:bg-white" />
+                                    <input {...registerSignup(`rendimentos.${index}.valor`, { valueAsNumber: true })} type="number" placeholder="Valor (R$)" className="w-32 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium outline-none focus:border-blue-500 focus:bg-white" />
+                                    {fields.length > 1 && (
+                                      <button type="button" onClick={() => remove(index)} className="text-slate-400 hover:text-red-500 p-2 shrink-0 transition-colors"><Trash2 size={18} /></button>
+                                    )}
+                                  </div>
+                                ))}
                               </div>
-                            ))}
+                            </div>
+                            
                             {fields.length < 3 && (
-                              <button type="button" onClick={() => append({ empregadora: '', valor: 0 })} className="w-full py-3 border-dashed border-2 border-slate-200 rounded-2xl text-slate-500 text-sm font-bold hover:bg-slate-50 hover:border-slate-300 transition-all">+ Adicionar Fonte de Renda</button>
+                              <button type="button" onClick={() => append({ empregadora: '', valor: '' as unknown as number })} className="w-full py-3 border-dashed border-2 border-slate-200 rounded-2xl text-slate-500 text-sm font-bold hover:bg-slate-50 hover:border-slate-300 transition-all">+ Adicionar Outra Fonte de Renda</button>
                             )}
                           </div>
                         )}
 
-                        <div className="grid grid-cols-2 gap-4 pt-4">
+                        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100">
                           <input {...registerSignup('password')} type="password" placeholder="Senha" className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 font-medium outline-none focus:border-blue-500 focus:bg-white" />
                           <input {...registerSignup('confirmPassword')} type="password" placeholder="Repita" className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-5 py-4 font-medium outline-none focus:border-blue-500 focus:bg-white" />
                         </div>
