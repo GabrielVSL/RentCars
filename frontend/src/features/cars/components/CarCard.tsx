@@ -25,6 +25,11 @@ export function CarCard({ carro, index, onSelect }: CarCardProps) {
             src={carro.imageUrl} 
             alt={carro.modelo} 
             className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-700 drop-shadow-2xl" 
+            // SUGESTÃO: adicionar atributos de performance e acessibilidade
+            // - loading="lazy" para carregamento preguiçoso
+            // - decoding="async" para melhorar layout
+            // - alt mais descritivo: `${carro.marca} ${carro.modelo} (${carro.ano})`
+            // Exemplo: alt={`${carro.marca} ${carro.modelo} (${carro.ano})`}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
@@ -61,7 +66,8 @@ export function CarCard({ carro, index, onSelect }: CarCardProps) {
           <div>
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Preço diário</p>
             <p className="text-3xl font-black text-slate-900">
-              R$ {carro.precoPorDia}
+              {/* SUGESTÃO: usar Intl.NumberFormat para formatar moeda corretamente */}
+              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(carro.precoPorDia))}
               <span className="text-xs text-slate-400 font-bold ml-1">/DIA</span>
             </p>
           </div>
@@ -69,6 +75,8 @@ export function CarCard({ carro, index, onSelect }: CarCardProps) {
           <button 
             onClick={() => onSelect(carro)}
             className="w-14 h-14 bg-slate-900 hover:bg-blue-600 text-white rounded-[20px] flex items-center justify-center transition-all duration-500 group/btn shadow-xl shadow-slate-900/10 hover:shadow-blue-600/30"
+            // Acessibilidade: adicionar aria-label descritivo para leitores de tela
+            aria-label={`Selecionar ${carro.marca} ${carro.modelo}`}
           >
             <ChevronRight size={28} className="group-hover/btn:translate-x-1 transition-transform" />
           </button>

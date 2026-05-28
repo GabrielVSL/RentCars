@@ -14,10 +14,12 @@ public class Automovel {
     private Long id;
 
     @Column(nullable = false, unique = true)
+    // SUGESTÃO DE VALIDATION: adicionar @NotNull e @Size/@Pattern conforme formato da matrícula
     private String matricula; 
 
     @Column(nullable = false)
     private Integer ano;      
+    // SUGESTÃO: validar intervalo razoável (ex: ano entre 1900 e currentYear+1)
 
     @Column(nullable = false)
     private String marca;     
@@ -26,13 +28,24 @@ public class Automovel {
     private String modelo;    
 
     @Column(nullable = false, unique = true)
+    // SUGESTÃO DE VALIDATION: adicionar @Pattern(regexp = ".{7}") ou regex para placa BR
     private String placa;     
 
     @Column
     private String imageUrl; // URL vinda do Cloudinary
+    // SUGESTÃO: considerar validação de formato (ex: começa com http) e limitar tamanho
 
     @Column(nullable = false)
     private BigDecimal precoPorDia;
+    
+        // ARCHITECTURE/EFFICIENCY:
+        // - Considere adicionar @Version (optimistic locking) se atualizações concorrentes forem esperadas.
+        // - Adicionar índices no banco (via migration) em campos usados em filtros (placa, matricula, proprietario_id).
+        // - Para leituras de listas, preferir projeções DTO para reduzir payload.
+        // Exemplo:
+        // @Version
+        // private Long version;
+    // SUGESTÃO: adicionar @NotNull e @Digits(integer=10, fraction=2)
 
     @ManyToOne
     @JoinColumn(name = "proprietario_id", nullable = false)
