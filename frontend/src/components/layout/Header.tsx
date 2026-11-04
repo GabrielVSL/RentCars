@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useUIStore } from '@/store/useUIStore';
 import { useAuthStore } from '@/store/useAuthStore';
-import { User, LogOut } from 'lucide-react';
+import { User } from 'lucide-react';
 
 // ... (Mantenha os ícones CarIcon, MenuIcon e XIcon iguais ao seu código original) ...
 const CarIcon = ({ className }: { className?: string }) => (
@@ -61,7 +61,7 @@ export default function Header({ transparent = false }: HeaderProps) {
       {(!user || user.role === 'CLIENTE') && (
         <>
           <a href="/cars" className={linkClass}>Carros</a>
-          <a href="/reviews" className={linkClass}>Avaliações</a>
+          
         </>
       )}
       {(user?.role === 'EMPRESA' || user?.role === 'BANCO') && (

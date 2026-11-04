@@ -40,7 +40,6 @@ export default function MeusAlugueisPage() {
     try {
       setIsLoading(true);
       const response = await api.get('/api/pedidos/meus');
-      // Ordena para os mais recentes (ou que precisam de ação) ficarem no topo
       const sorted = response.data.sort((a: Pedido, b: Pedido) => {
         if (a.status === 'REVISAO_CLIENTE') return -1;
         return new Date(b.dataPedido).getTime() - new Date(a.dataPedido).getTime();
@@ -69,6 +68,21 @@ export default function MeusAlugueisPage() {
     }
   };
 
+  const handleCancelarPedido = async (id: number) => {
+    if (!window.confirm("Deseja realmente cancelar este pedido de aluguel?")) return;
+    try {
+      setIsProcessing(id);
+      await api.put(`/api/pedidos/${id}/cancelar`);
+      setPedidos(prev => prev.map(p => 
+        p.id === id ? { ...p, status: 'CANCELADO' } : p
+      ));
+    } catch (error: any) {
+      alert(error.response?.data?.message || "Erro ao cancelar pedido.");
+    } finally {
+      setIsProcessing(null);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#F5F5F7] pt-24 pb-32">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -87,7 +101,7 @@ export default function MeusAlugueisPage() {
             <p className="text-slate-400 font-bold tracking-wide uppercase text-sm">Buscando na garagem...</p>
           </div>
         ) : pedidos.length === 0 ? (
-          /* Empty State (Estado Vazio) Premium */
+          /* Empty State */
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-slate-200 rounded-[40px] p-16 text-center shadow-sm">
             <div className="w-24 h-24 bg-blue-50 rounded-[32px] flex items-center justify-center mx-auto mb-6">
               <CarFront size={48} className="text-blue-500" />
@@ -105,10 +119,10 @@ export default function MeusAlugueisPage() {
                 const config = statusConfig[pedido.status] || statusConfig.PENDENTE;
                 const StatusIcon = config.icon;
                 
-                // Cálculos de datas usando date-fns
                 const dataInicio = parseISO(pedido.dataInicio);
                 const dataFim = parseISO(pedido.dataFim);
                 const diarias = Math.max(1, Math.ceil(differenceInDays(dataFim, dataInicio)));
+                const podeCancelar = ['PENDENTE', 'PENDENTE_EMPRESA', 'PENDENTE_BANCO'].includes(pedido.status);
 
                 return (
                   <motion.div
@@ -118,7 +132,7 @@ export default function MeusAlugueisPage() {
                     transition={{ delay: index * 0.1 }}
                     className="bg-white border border-slate-100 rounded-[32px] overflow-hidden shadow-[0_20px_50px_-12px_rgba(0,0,0,0.05)] flex flex-col md:flex-row group hover:border-blue-100 hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-500"
                   >
-                    {/* Foto do Carro (Esquerda) */}
+                    {/* Foto do Carro */}
                     <div className="md:w-72 bg-[#F8F8FA] relative shrink-0 p-8 flex items-center justify-center">
                       <div className="absolute top-4 left-4">
                         <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border ${config.color}`}>
@@ -134,7 +148,7 @@ export default function MeusAlugueisPage() {
                       )}
                     </div>
 
-                    {/* Detalhes (Direita) */}
+                    {/* Detalhes */}
                     <div className="p-8 flex-1 flex flex-col justify-between">
                       
                       {/* Título e ID */}
@@ -150,7 +164,7 @@ export default function MeusAlugueisPage() {
                         </div>
                       </div>
 
-                      {/* Informações de Data - Bento Style */}
+                      {/* Informações de Data */}
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
                         <div className="bg-[#F5F5F7] rounded-2xl p-4 border border-slate-100">
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1"><CalendarDays size={12}/> Retirada</p>
@@ -163,12 +177,25 @@ export default function MeusAlugueisPage() {
                           <p className="text-xs text-slate-500 font-medium">{format(dataFim, "HH:mm")}</p>
                         </div>
                         <div className="col-span-2 md:col-span-1 bg-blue-50 rounded-2xl p-4 border border-blue-100 flex flex-col justify-center">
-                          <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Período</p>
-                          <p className="text-xl font-black text-blue-600">{diarias} <span className="text-sm font-bold">diárias</span></p>
+                          <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">{diarias} {diarias === 1 ? 'diária' : 'diárias'}</p>
+                          <p className="text-xl font-black text-blue-600">R$ {pedido.valorTotal ? Number(pedido.valorTotal).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '---'}</p>
                         </div>
                       </div>
 
-                      {/* Área de Ação Crítica (Revisão da Empresa) */}
+                      {/* Botão de Cancelamento para Pedidos Ativos */}
+                      {podeCancelar && (
+                        <div className="flex justify-end mb-4">
+                          <button
+                            onClick={() => handleCancelarPedido(pedido.id)}
+                            disabled={isProcessing === pedido.id}
+                            className="px-4 py-2 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-bold transition-all flex items-center gap-1.5"
+                          >
+                            {isProcessing === pedido.id ? <Loader2 size={14} className="animate-spin" /> : <XCircle size={14} />} Cancelar Pedido
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Área de Ação de Revisão de Contraproposta */}
                       {pedido.status === 'REVISAO_CLIENTE' && (
                         <div className="bg-gradient-to-r from-purple-50 to-white border border-purple-200 rounded-2xl p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-5 shadow-inner mt-auto">
                           <div className="flex items-start gap-3 text-purple-900">

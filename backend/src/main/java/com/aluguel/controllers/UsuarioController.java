@@ -19,12 +19,14 @@ public class UsuarioController {
     }
 
     @Post("/registrar")
-    public HttpResponse<Usuario> registrar(@Body Map<String, Object> payload) {
+    public HttpResponse<?> registrar(@Body Map<String, Object> payload) {
         try {
             Usuario salvo = facade.registrar(payload);
             return HttpResponse.created(salvo);
+        } catch (IllegalArgumentException e) {
+            return HttpResponse.badRequest(Map.of("message", e.getMessage()));
         } catch (Exception e) {
-            return HttpResponse.badRequest();
+            return HttpResponse.badRequest(Map.of("message", "Erro ao registrar usuário. Verifique se o e-mail ou documento já existem."));
         }
     }
 }

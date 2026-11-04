@@ -22,8 +22,11 @@ public class AutomovelFacade {
         return (List<Automovel>) automovelRepository.findAll();
     }
 
+    public List<Automovel> listarPorProprietario(String emailProprietario) {
+        return automovelRepository.findByProprietarioEmail(emailProprietario);
+    }
+
     public Automovel criar(Automovel automovel, String emailProprietario) {
-        // Busca a empresa logada no banco para vincular como dona do carro
         Usuario proprietario = usuarioRepository.findByEmail(emailProprietario)
                 .orElseThrow(() -> new IllegalArgumentException("Proprietário não encontrado"));
         
@@ -31,15 +34,12 @@ public class AutomovelFacade {
         return automovelRepository.save(automovel);
     }
 
-    // --- MÉTODOS NOVOS QUE FALTAVAM ---
-
     public Automovel atualizar(Long id, Automovel dadosNovos, String emailLogado) {
         Automovel carro = automovelRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Carro não encontrado"));
 
-        // Segurança mantida...
         if (!carro.getProprietario().getEmail().equals(emailLogado)) {
-            throw new IllegalStateException("Você não tem permissão para editar este veículo.");
+            throw new IllegalArgumentException("Você não tem permissão para editar este veículo.");
         }
 
         carro.setMarca(dadosNovos.getMarca());
@@ -47,7 +47,7 @@ public class AutomovelFacade {
         carro.setAno(dadosNovos.getAno());
         carro.setPlaca(dadosNovos.getPlaca());
         carro.setMatricula(dadosNovos.getMatricula());
-        carro.setImageUrl(dadosNovos.getImageUrl()); // Salva a URL do Cloudinary
+        carro.setImageUrl(dadosNovos.getImageUrl());
         carro.setPrecoPorDia(dadosNovos.getPrecoPorDia());
 
         return automovelRepository.update(carro);
@@ -57,9 +57,8 @@ public class AutomovelFacade {
         Automovel carro = automovelRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Carro não encontrado"));
 
-        // Segurança: Só o dono (Empresa logada) pode excluir
         if (!carro.getProprietario().getEmail().equals(emailLogado)) {
-            throw new IllegalStateException("Você não tem permissão para excluir este veículo.");
+            throw new IllegalArgumentException("Você não tem permissão para excluir este veículo.");
         }
 
         automovelRepository.delete(carro);

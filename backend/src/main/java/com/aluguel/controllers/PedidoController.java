@@ -5,7 +5,9 @@ import com.aluguel.models.Pedido;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.annotation.*;
 import io.micronaut.security.annotation.Secured;
+import io.micronaut.security.rules.SecurityRule;
 import java.security.Principal;
+import java.util.Map;
 
 @Controller("/api/pedidos")
 public class PedidoController {
@@ -24,7 +26,7 @@ public class PedidoController {
             Pedido salvo = facade.criarPedido(pedido, principal.getName());
             return HttpResponse.created(salvo);
         } catch (IllegalArgumentException e) {
-            return HttpResponse.badRequest(e.getMessage());
+            return HttpResponse.badRequest(Map.of("message", e.getMessage()));
         }
     }
 
@@ -36,7 +38,7 @@ public class PedidoController {
             Pedido avaliado = facade.avaliarPedido(id, principal.getName(), status);
             return HttpResponse.ok(avaliado);
         } catch (IllegalArgumentException e) {
-            return HttpResponse.badRequest(e.getMessage());
+            return HttpResponse.badRequest(Map.of("message", e.getMessage()));
         }
     }
 
@@ -47,22 +49,22 @@ public class PedidoController {
     }
 
     @Get("/ocupados/{automovelId}")
-    @Secured(io.micronaut.security.rules.SecurityRule.IS_ANONYMOUS)
+    @Secured(SecurityRule.IS_ANONYMOUS)
     public HttpResponse<?> buscarDatasOcupadas(@PathVariable Long automovelId) {
         try {
             return HttpResponse.ok(facade.buscarDatasOcupadas(automovelId));
         } catch (Exception e) {
-            return HttpResponse.badRequest(e.getMessage());
+            return HttpResponse.badRequest(Map.of("message", e.getMessage()));
         }
     }
 
     @Put("/{id}/modificar")
-    @Secured({"ROLE_EMPRESA", "ROLE_BANCO"})
+    @Secured("ROLE_EMPRESA")
     public HttpResponse<?> modificar(@PathVariable Long id, @Body Pedido pedido, Principal principal) {
         try {
             return HttpResponse.ok(facade.modificarPedidoAgente(id, principal.getName(), pedido));
         } catch (Exception e) {
-            return HttpResponse.badRequest(e.getMessage());
+            return HttpResponse.badRequest(Map.of("message", e.getMessage()));
         }
     }
 
@@ -72,7 +74,17 @@ public class PedidoController {
         try {
             return HttpResponse.ok(facade.responderContrapropostaCliente(id, principal.getName(), aceito));
         } catch (Exception e) {
-            return HttpResponse.badRequest(e.getMessage());
+            return HttpResponse.badRequest(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @Put("/{id}/cancelar")
+    @Secured("ROLE_CLIENTE")
+    public HttpResponse<?> cancelarPedido(@PathVariable Long id, Principal principal) {
+        try {
+            return HttpResponse.ok(facade.cancelarPedidoCliente(id, principal.getName()));
+        } catch (Exception e) {
+            return HttpResponse.badRequest(Map.of("message", e.getMessage()));
         }
     }
 

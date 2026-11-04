@@ -5,10 +5,9 @@ import PageTransition from '@/components/PageTransition.tsx';
 import PedidosPage from '@/features/booking/pages/PedidosPage';
 import MeusAlugueisPage from '@/features/booking/pages/MeusAlugueisPage';
 import AnalisesPage from '@/features/bank/pages/AnalisesPage';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
 
-// O SEGREDO: Importar o AuthModule aqui no arquivo raiz!
 import AuthModule from '@/components/auth/AuthModule';
-
 import { SearchHero } from '@/features/booking';
 import CarsPage from '@/features/cars/pages/CarsPage.tsx';
 import FrotaPage from '@/features/cars/pages/FrotaPage.tsx';
@@ -16,7 +15,10 @@ import FrotaPage from '@/features/cars/pages/FrotaPage.tsx';
 function NotFound() {
   return (
     <div className="min-h-screen flex items-center justify-center text-center">
-      <div><h1 className="text-4xl font-bold mb-4">404</h1><p>Página não encontrada</p></div>
+      <div>
+        <h1 className="text-4xl font-bold mb-4">404</h1>
+        <p>Página não encontrada</p>
+      </div>
     </div>
   );
 }
@@ -24,7 +26,6 @@ function NotFound() {
 export default function App() {
   return (
     <Router>
-      {/* O AuthModule agora é global! Funciona na Home e em qualquer outra rota. */}
       <AuthModule />
       
       <Routes>
@@ -33,11 +34,48 @@ export default function App() {
         </Route>
 
         <Route element={<Layout />}>
+          {/* Rota pública de catálogo */}
           <Route path="/cars" element={<PageTransition><CarsPage /></PageTransition>} />
-          <Route path="/frota" element={<PageTransition><FrotaPage /></PageTransition>} />
-          <Route path="/pedidos" element={<PageTransition><PedidosPage /></PageTransition>} />
-          <Route path="/meus-alugueis" element={<PageTransition><MeusAlugueisPage /></PageTransition>} />
-          <Route path="/analises" element={<PageTransition><AnalisesPage /></PageTransition>} />
+
+          {/* Rota exclusiva para Locadoras/Empresas */}
+          <Route
+            path="/frota"
+            element={
+              <ProtectedRoute allowedRoles={['EMPRESA']}>
+                <PageTransition><FrotaPage /></PageTransition>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Gestão de Pedidos para Empresas e Bancos */}
+          <Route
+            path="/pedidos"
+            element={
+              <ProtectedRoute allowedRoles={['EMPRESA', 'BANCO']}>
+                <PageTransition><PedidosPage /></PageTransition>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Área exclusiva do Cliente */}
+          <Route
+            path="/meus-alugueis"
+            element={
+              <ProtectedRoute allowedRoles={['CLIENTE']}>
+                <PageTransition><MeusAlugueisPage /></PageTransition>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Área de Análise e Auditoria de Crédito do Banco */}
+          <Route
+            path="/analises"
+            element={
+              <ProtectedRoute allowedRoles={['BANCO']}>
+                <PageTransition><AnalisesPage /></PageTransition>
+              </ProtectedRoute>
+            }
+          />
         </Route>
 
         <Route path="/*" element={<PageTransition><NotFound /></PageTransition>} />

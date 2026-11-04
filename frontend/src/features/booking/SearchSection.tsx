@@ -7,8 +7,8 @@ import { useSearchForm } from '@/hooks/useSearchForm';
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { PremiumDatePicker } from '@/components/ui/PremiumDatePicker';
-import { MapPin, CalendarDays, Clock, Search, Sparkles, Loader2, ArrowRight } from 'lucide-react';
-import { format, parseISO, startOfDay } from 'date-fns';
+import { MapPin, CalendarDays, Clock, Search, Sparkles, ArrowRight } from 'lucide-react';
+import { format, startOfDay } from 'date-fns';
 import { DateRange } from 'react-day-picker';
 import type { Location } from '@/types'; 
 
@@ -31,7 +31,7 @@ const buildLocationFromOption = (opt: typeof LOCATION_OPTIONS[0] | null | undefi
 
 export default function SearchSection({ onSuccess }: { onSuccess?: () => void }) {
   const navigate = useNavigate();
-  const [showSuccess, setShowSuccess] = useState(false);
+
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const calendarRef = useRef<HTMLDivElement>(null);
 
@@ -87,7 +87,13 @@ export default function SearchSection({ onSuccess }: { onSuccess?: () => void })
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setShowSuccess(true);
+    if (formData.pickupDate && formData.returnDate) {
+      localStorage.setItem('rentcars_search_params', JSON.stringify({
+        pickupDate: formData.pickupDate,
+        returnDate: formData.returnDate
+      }));
+    }
+
     onSuccess?.();
     setTimeout(() => navigate('/cars'), 1000);
   };
@@ -114,7 +120,7 @@ export default function SearchSection({ onSuccess }: { onSuccess?: () => void })
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">Onde você retira?</label>
                   <Select
                     options={LOCATION_OPTIONS}
-                    value={LOCATION_OPTIONS.find(opt => opt.label === formData.pickupLocation)?.value || null}
+                    value={LOCATION_OPTIONS.find(opt => opt.label === formData.pickupLocation)?.value || undefined}
                     onValueChange={handleLocationChange}
                     placeholder="Cidade ou Aeroporto"
                     className="bg-[#F5F5F7] border-transparent text-slate-900 font-bold rounded-2xl h-16 hover:bg-[#EEEEF0] transition-all shadow-inner"

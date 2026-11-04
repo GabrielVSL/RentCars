@@ -1,6 +1,7 @@
 package com.aluguel.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.micronaut.serde.annotation.Serdeable;
 import jakarta.persistence.*;
 
@@ -18,6 +19,7 @@ public class Usuario {
     private String email;
 
     @Column(nullable = false)
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String senha;
 
     @Column(nullable = false)

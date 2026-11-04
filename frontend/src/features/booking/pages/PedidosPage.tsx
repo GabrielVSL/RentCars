@@ -72,8 +72,8 @@ export default function PedidosPage() {
     try {
       setIsProcessing(true);
       const payload = {
-        dataInicio: new Date(editDates.start).toISOString(),
-        dataFim: new Date(editDates.end).toISOString()
+        dataInicio: editDates.start.length === 16 ? `${editDates.start}:00` : editDates.start,
+        dataFim: editDates.end.length === 16 ? `${editDates.end}:00` : editDates.end
       };
       
       await api.put(`/api/pedidos/${pedidoSelecionado.id}/modificar`, payload);

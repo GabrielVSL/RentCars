@@ -32,14 +32,14 @@ export default function FrotaPage() {
   const [carroEditando, setCarroEditando] = useState<Automovel | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<CarFormInputs>({
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<CarFormInputs>({
     resolver: zodResolver(carSchema)
   });
 
   const fetchCarros = async () => {
     try {
       setIsLoading(true);
-      const response = await api.get('/api/automoveis');
+      const response = await api.get('/api/automoveis/minha-frota');
       setCarros(response.data);
     } catch (error) {
       console.error("Erro ao buscar frota:", error);

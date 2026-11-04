@@ -9,6 +9,7 @@ import java.util.List;
 @Table(name = "clientes")
 public class Cliente extends Usuario {
 
+    @Column(unique = true)
     private String cpf;
     private String rg;
     private String profissao;

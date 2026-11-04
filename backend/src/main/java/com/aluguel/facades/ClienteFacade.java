@@ -46,8 +46,8 @@ public class ClienteFacade {
         return false;
     }
 
-    // Centralizamos a regra de negócio em um método privado!
-private void validarRegrasDeNegocio(Cliente cliente) {
+    // Centralizamos a regra de negócio
+    public void validarRegrasDeNegocio(Cliente cliente) {
         if (cliente.getNome() == null || cliente.getNome().trim().isEmpty()) {
             throw new IllegalArgumentException("O nome do cliente é obrigatório.");
         }

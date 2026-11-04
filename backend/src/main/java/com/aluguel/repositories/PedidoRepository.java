@@ -16,8 +16,15 @@ public interface PedidoRepository extends CrudRepository<Pedido, Long> {
     List<Pedido> findByAutomovelIdAndStatusIn(Long automovelId, List<String> statuses);
 
     @Query("SELECT COUNT(p) FROM Pedido p WHERE p.automovel.id = :automovelId " +
-           "AND p.status IN ('PENDENTE_EMPRESA', 'PENDENTE_BANCO', 'APROVADO') " +
+           "AND p.status IN ('PENDENTE_EMPRESA', 'PENDENTE_BANCO', 'APROVADO', 'REVISAO_CLIENTE') " +
            "AND p.dataInicio < :novaDataFim " +
            "AND p.dataFim > :novaDataInicio")
     long countAlugueisConflitantes(Long automovelId, LocalDateTime novaDataInicio, LocalDateTime novaDataFim);
+
+    @Query("SELECT COUNT(p) FROM Pedido p WHERE p.automovel.id = :automovelId " +
+           "AND p.id != :pedidoId " +
+           "AND p.status IN ('PENDENTE_EMPRESA', 'PENDENTE_BANCO', 'APROVADO', 'REVISAO_CLIENTE') " +
+           "AND p.dataInicio < :novaDataFim " +
+           "AND p.dataFim > :novaDataInicio")
+    long countAlugueisConflitantesExcluindoPedido(Long automovelId, Long pedidoId, LocalDateTime novaDataInicio, LocalDateTime novaDataFim);
 }

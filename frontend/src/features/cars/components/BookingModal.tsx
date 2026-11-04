@@ -101,8 +101,8 @@ export function BookingModal({ isOpen, onClose, car }: BookingModalProps) {
 
             const payload = {
                 automovel: { id: car.id },
-                dataInicio: range.from.toISOString(),
-                dataFim: range.to.toISOString(),
+                dataInicio: `${range.from.getFullYear()}-${String(range.from.getMonth() + 1).padStart(2, '0')}-${String(range.from.getDate()).padStart(2, '0')}T00:00:00`,
+                dataFim: `${range.to.getFullYear()}-${String(range.to.getMonth() + 1).padStart(2, '0')}-${String(range.to.getDate()).padStart(2, '0')}T23:59:59`,
                 valorTotal: valorCalculado
             };
 
@@ -110,7 +110,7 @@ export function BookingModal({ isOpen, onClose, car }: BookingModalProps) {
             alert("Pedido realizado com sucesso! Aguarde a avaliação da empresa.");
             onClose();
         } catch (error: any) {
-            alert(error.response?.data || "Erro ao realizar pedido.");
+            alert(error.response?.data?.message || error.response?.data || "Erro ao realizar pedido.");
         } finally {
             setIsSubmitting(false);
         }

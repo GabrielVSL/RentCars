@@ -3,9 +3,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  ShieldCheck, ShieldAlert, DollarSign, UserCircle,
-  Activity, Loader2, CheckCircle2, XCircle, 
-  History, AlertTriangle, ChevronDown, Clock
+  ShieldCheck, UserCircle,
+  Activity, Loader2, 
+  History, ChevronDown
 } from 'lucide-react';
 import { api } from '@/services/api';
 
@@ -189,7 +189,7 @@ export default function AnalisesPage() {
                             
                             {[...grupo.pAtivos, ...grupo.historico].map(p => {
                                const isActive = grupo.pAtivos.some(ativo => ativo.id === p.id);
-                               const isLegado = p.status === 'PENDENTE'; // Trata o erro do PENDENTE antigo
+
 
                                return (
                                 <div key={p.id} className={`flex items-center justify-between p-4 rounded-xl border ${isActive ? 'bg-blue-500/5 border-blue-500/20' : 'bg-slate-800/30 border-slate-700/50'}`}>

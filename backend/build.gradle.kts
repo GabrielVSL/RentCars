@@ -70,7 +70,7 @@ micronaut {
     testRuntime("junit5")
     processing {
         incremental(true)
-        annotations("com.example.*")
+        annotations("com.aluguel.*", "com.example.*")
     }
     aot {
         // Please review carefully the optimizations enabled below

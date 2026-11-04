@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MapPin, CalendarDays, ArrowRight, XCircle, Calendar as CalendarIcon } from 'lucide-react';
 import { DateRange } from 'react-day-picker';
-import { ptBR } from 'date-fns/locale';
+
 import { format, parseISO, startOfDay } from 'date-fns';
 import { PremiumDatePicker } from '@/components/ui/PremiumDatePicker';
 import 'react-day-picker/dist/style.css';
