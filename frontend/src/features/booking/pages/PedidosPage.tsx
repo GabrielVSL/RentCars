@@ -7,6 +7,7 @@ import {
   User, CarFront, Loader2, X, ChevronRight, FileText, Edit3, Send
 } from 'lucide-react';
 import { api } from '@/services/api';
+import { toast } from '@/store/useToastStore';
 
 interface Pedido {
   id: number;
@@ -51,7 +52,8 @@ export default function PedidosPage() {
         start: new Date(pedidoSelecionado.dataInicio).toISOString().slice(0, 16),
         end: new Date(pedidoSelecionado.dataFim).toISOString().slice(0, 16)
       });
-      setIsEditing(false); // Sempre reseta o modo de edição ao abrir outro pedido
+      setIsEditing(false);
+      toast.success("Contraproposta enviada ao cliente com sucesso!"); // Sempre reseta o modo de edição ao abrir outro pedido
     }
   }, [pedidoSelecionado]);
 
@@ -60,8 +62,9 @@ export default function PedidosPage() {
       setIsProcessing(true);
       await api.put(`/api/pedidos/${id}/avaliar?status=${novoStatus}`);
       atualizarEstadoLocal(id, novoStatus);
+      toast.success(novoStatus === 'APROVADO' ? "Pedido aprovado com sucesso!" : "Pedido rejeitado.");
     } catch (error) {
-      alert("Erro ao processar decisão.");
+      toast.error("Erro ao processar decisão.");
     } finally {
       setIsProcessing(false);
     }
@@ -82,8 +85,9 @@ export default function PedidosPage() {
       setPedidos(prev => prev.map(p => p.id === pedidoSelecionado.id ? { ...p, status: 'REVISAO_CLIENTE', dataInicio: payload.dataInicio, dataFim: payload.dataFim } : p));
       setPedidoSelecionado(prev => prev ? { ...prev, status: 'REVISAO_CLIENTE', dataInicio: payload.dataInicio, dataFim: payload.dataFim } : null);
       setIsEditing(false);
+      toast.success("Contraproposta enviada ao cliente com sucesso!");
     } catch (error) {
-      alert("Erro ao enviar contraproposta.");
+      toast.error("Erro ao enviar contraproposta.");
     } finally {
       setIsProcessing(false);
     }

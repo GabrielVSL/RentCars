@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { carSchema, CarFormInputs } from '@/schemas/carSchema';
 import { api } from '@/services/api';
+import { toast } from '@/store/useToastStore';
 
 interface Automovel {
   id: number;
@@ -59,10 +60,10 @@ export default function FrotaPage() {
       setIsUploading(true);
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('upload_preset', 'rentcars_preset'); // O nome que você deu lá no site
+      formData.append('upload_preset', import.meta.env.VITE_CLOUDINARY_PRESET || 'rentcars_preset');
 
       // ATENÇÃO: Troque "SEU_CLOUD_NAME" pelo seu nome real do Cloudinary
-      const res = await fetch('https://api.cloudinary.com/v1_1/db4qol7fr/image/upload', {
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'db4qol7fr'}/image/upload`, {
         method: 'POST',
         body: formData,
       });
@@ -72,7 +73,7 @@ export default function FrotaPage() {
         setPreviewImage(data.secure_url);
       }
     } catch (error) {
-      alert("Erro ao subir a imagem.");
+      toast.error("Erro ao subir a imagem.");
     } finally {
       setIsUploading(false);
     }
@@ -94,7 +95,7 @@ export default function FrotaPage() {
       await fetchCarros();
       fecharModal();
     } catch (error) {
-      alert("Erro ao salvar veículo.");
+      toast.error("Erro ao salvar veículo.");
     } finally {
       setIsSubmitting(false);
     }
@@ -107,7 +108,7 @@ export default function FrotaPage() {
         await api.delete(`/api/automoveis/${id}`);
         setCarros(carros.filter(c => c.id !== id));
       } catch (error) {
-        alert("Erro ao excluir veículo.");
+        toast.error("Erro ao excluir veículo.");
       }
     }
   };

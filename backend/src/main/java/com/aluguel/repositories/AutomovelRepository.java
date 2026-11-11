@@ -19,4 +19,6 @@ public interface AutomovelRepository extends CrudRepository<Automovel, Long> {
     List<Automovel> findDisponiveis(LocalDateTime dataInicio, LocalDateTime dataFim);
 
     List<Automovel> findByProprietarioEmail(String email);
+
+    List<Automovel> findByCircuitoIdAndAtivoBoxTrue(String circuitoId);
 }

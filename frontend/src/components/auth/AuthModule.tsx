@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useUIStore } from '@/store/useUIStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { api } from '@/services/api';
+import { toast } from '@/store/useToastStore';
 import { X, Loader2, Trash2 } from 'lucide-react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -52,6 +53,7 @@ export default function AuthModule() {
       const { access_token, roles } = response.data;
       const userRole = (roles && roles.length > 0 ? roles[0] : 'ROLE_CLIENTE').replace('ROLE_', '');
       loginToStore(access_token, data.email, userRole); 
+      toast.success('Login realizado com sucesso!');
       closeAuth();
     } catch (error) { setServerError('E-mail ou senha incorretos.'); } finally { setIsLoading(false); }
   };
@@ -68,9 +70,12 @@ export default function AuthModule() {
       };
       await api.post('/api/usuarios/registrar', payload);
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      toast.success('Conta criada com sucesso! Faça login para continuar.');
       setAuthView('login');
     } catch (error: any) {
-      setServerError('Dados inválidos. Verifique se o CPF/CNPJ ou E-mail já existem.');
+      const msg = error.response?.data?.message || 'Dados inválidos. Verifique se o CPF/CNPJ ou E-mail já existem.';
+      setServerError(msg);
+      toast.error(msg);
     } finally {
       setIsLoading(false);
     }
@@ -85,11 +90,11 @@ export default function AuthModule() {
   return (
     <AnimatePresence>
       {authView && (
-        <div className="fixed inset-0 z-[100] flex justify-end pointer-events-none">
+        <div className="fixed inset-0 z-[200] flex justify-end pointer-events-none">
           <motion.div 
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} 
             onClick={closeAuth} 
-            className={`absolute inset-0 pointer-events-auto transition-colors duration-500 ${authView === 'register' ? 'bg-slate-900/40 backdrop-blur-md' : 'bg-transparent'}`} 
+            className="absolute inset-0 pointer-events-auto transition-colors duration-500 bg-slate-900/40 backdrop-blur-sm" 
           />
 
           <motion.div 

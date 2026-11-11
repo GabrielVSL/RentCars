@@ -19,7 +19,8 @@ public class AutomovelFacade {
     }
 
     public List<Automovel> listarTodos() {
-        return (List<Automovel>) automovelRepository.findAll();
+        return java.util.stream.StreamSupport.stream(automovelRepository.findAll().spliterator(), false)
+                .toList();
     }
 
     public List<Automovel> listarPorProprietario(String emailProprietario) {

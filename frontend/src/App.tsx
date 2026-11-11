@@ -6,11 +6,12 @@ import PedidosPage from '@/features/booking/pages/PedidosPage';
 import MeusAlugueisPage from '@/features/booking/pages/MeusAlugueisPage';
 import AnalisesPage from '@/features/bank/pages/AnalisesPage';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import ToastContainer from '@/components/ui/ToastContainer';
 
 import AuthModule from '@/components/auth/AuthModule';
-import { SearchHero } from '@/features/booking';
 import CarsPage from '@/features/cars/pages/CarsPage.tsx';
 import FrotaPage from '@/features/cars/pages/FrotaPage.tsx';
+import PistasPage from '@/features/circuits/pages/PistasPage';
 
 function NotFound() {
   return (
@@ -27,13 +28,15 @@ export default function App() {
   return (
     <Router>
       <AuthModule />
+      <ToastContainer />
       
       <Routes>
-        <Route path="/" element={<HomeLayout />}>
-          <Route index element={<PageTransition><SearchHero /></PageTransition>} />
-        </Route>
+        <Route path="/" element={<PageTransition><HomeLayout /></PageTransition>} />
 
         <Route element={<Layout />}>
+          {/* Rota pública de pistas oficiais */}
+          <Route path="/pistas" element={<PageTransition><PistasPage /></PageTransition>} />
+
           {/* Rota pública de catálogo */}
           <Route path="/cars" element={<PageTransition><CarsPage /></PageTransition>} />
 

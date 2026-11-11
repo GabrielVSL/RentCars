@@ -8,6 +8,7 @@ import {
   History, ChevronDown
 } from 'lucide-react';
 import { api } from '@/services/api';
+import { toast } from '@/store/useToastStore';
 
 interface Pedido {
   id: number;
@@ -98,7 +99,8 @@ export default function AnalisesPage() {
       await api.put(`/api/pedidos/${id}/avaliar?status=${status}`);
       // Atualiza o state local para refletir na hora
       setPedidos(prev => prev.map(p => p.id === id ? { ...p, status } : p));
-    } catch (error) { alert("Erro na análise."); }
+      toast.success(status === 'APROVADO' ? "Crédito aprovado com sucesso!" : "Crédito recusado.");
+    } catch (error) { toast.error("Erro na análise de crédito."); }
   };
 
   return (

@@ -2,17 +2,15 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, CalendarDays, ArrowRight, XCircle, Calendar as CalendarIcon } from 'lucide-react';
+import { Flag, ArrowRight, RotateCcw } from 'lucide-react';
 import { DateRange } from 'react-day-picker';
-
-import { format, parseISO, startOfDay } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { PremiumDatePicker } from '@/components/ui/PremiumDatePicker';
 import 'react-day-picker/dist/style.css';
 
 interface CarsFilterProps {
   start: string;
   end: string;
-  // 1. MUDANÇA CRÍTICA: Agora envia as duas datas juntas
   onDateChange: (start: string, end: string) => void; 
   onClear: () => void;
 }
@@ -20,8 +18,6 @@ interface CarsFilterProps {
 export function CarsFilter({ start, end, onDateChange, onClear }: CarsFilterProps) {
   const [isOpen, setIsOpen] = useState(false);
   const popupRef = useRef<HTMLDivElement>(null);
-
-  // 2. A ISOLAÇÃO: O calendário guarda os cliques aqui até o usuário terminar
   const [localRange, setLocalRange] = useState<DateRange | undefined>();
 
   const isSearchActive = start !== '' && end !== '';
@@ -46,13 +42,11 @@ export function CarsFilter({ start, end, onDateChange, onClear }: CarsFilterProp
     setIsOpen(!isOpen);
   };
 
-  // 3. LÓGICA SEGURA: Só avisa o sistema e fecha o Popover no SEGUNDO clique
   const handleRangeSelect = (range: DateRange | undefined) => {
-    setLocalRange(range); // Atualiza só a bolha visual do calendário
-    
+    setLocalRange(range);
     if (range?.from && range?.to) {
       onDateChange(format(range.from, 'yyyy-MM-dd'), format(range.to, 'yyyy-MM-dd'));
-      setIsOpen(false); // Fecha suavemente depois do segundo clique
+      setIsOpen(false);
     }
   };
 
@@ -63,75 +57,77 @@ export function CarsFilter({ start, end, onDateChange, onClear }: CarsFilterProp
     <motion.div 
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white/90 backdrop-blur-xl rounded-[32px] shadow-sm border border-slate-200 p-3 mb-8 flex flex-col md:flex-row items-center justify-between gap-4 sticky top-20 z-40 relative"
+      className="bg-[#0F1117]/90 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/10 p-3 mb-10 flex flex-col md:flex-row items-center justify-between gap-4 sticky top-20 z-40 relative"
     >
       <div className="flex items-center gap-3 px-4">
-        <div className="w-10 h-10 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 shadow-inner shrink-0">
-          <MapPin size={18} />
+        <div className="w-10 h-10 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center text-[#FF1717] shrink-0">
+          <Flag size={18} />
         </div>
-        <div className="shrink-0">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Retirada em</p>
-          <p className="text-sm font-bold text-slate-900">Belo Horizonte, MG</p>
+        <div className="shrink-0 font-mono">
+          <p className="text-[9px] font-bold text-white/40 uppercase tracking-widest leading-none mb-1">Paddock de Retirada</p>
+          <p className="text-sm font-bold text-white">Circuitos Homologados FIA 🏁</p>
         </div>
       </div>
 
       <div className="relative flex-1 max-w-md w-full" ref={popupRef}>
-        <div onClick={handleOpen} className={`flex items-center bg-slate-100/50 rounded-2xl p-1.5 border transition-all cursor-pointer hover:bg-slate-100 ${isOpen ? 'border-blue-400 ring-4 ring-blue-500/10' : 'border-slate-200/50'}`}>
+        <div 
+          onClick={handleOpen} 
+          className={`flex items-center bg-black/40 rounded-2xl p-1.5 border transition-all cursor-pointer hover:border-white/20 font-mono ${
+            isOpen ? 'border-[#FF1717] ring-2 ring-[#FF1717]/20' : 'border-white/10'
+          }`}
+        >
           <div className="flex-1 px-4 py-1.5 flex flex-col">
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Início</p>
-            <p className={`text-sm font-bold ${start || localRange?.from ? 'text-slate-900' : 'text-slate-400'}`}>{displayStart}</p>
+            <span className="text-[9px] uppercase font-bold text-white/40 tracking-widest leading-none mb-1">Início da Bateria</span>
+            <span className={`text-xs font-bold leading-none ${start ? 'text-white' : 'text-white/40'}`}>{displayStart}</span>
           </div>
-          <div className="px-2 text-slate-300"><ArrowRight size={14} /></div>
+
+          <ArrowRight size={14} className="text-[#FF1717] shrink-0 mx-2" />
+
           <div className="flex-1 px-4 py-1.5 flex flex-col">
-            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Devolução</p>
-            <p className={`text-sm font-bold ${end || localRange?.to ? 'text-slate-900' : 'text-slate-400'}`}>{displayEnd}</p>
+            <span className="text-[9px] uppercase font-bold text-white/40 tracking-widest leading-none mb-1">Fim da Bateria</span>
+            <span className={`text-xs font-bold leading-none ${end ? 'text-white' : 'text-white/40'}`}>{displayEnd}</span>
           </div>
         </div>
 
+        {/* Popover Calendário */}
         <AnimatePresence>
           {isOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: 10, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 10, scale: 0.95 }}
-              transition={{ duration: 0.2 }}
-              className="absolute top-full left-1/2 md:left-0 -translate-x-1/2 md:translate-x-0 mt-4 bg-white p-6 rounded-[32px] border border-slate-100 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.15)] z-50 origin-top"
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.15 }}
+              className="absolute top-full left-1/2 -translate-x-1/2 mt-3 z-50 bg-[#08090C] border border-white/20 rounded-3xl p-5 shadow-2xl flex flex-col items-center"
             >
-              <div className="mb-6 flex items-center gap-2 pb-4 border-b border-slate-50">
-                <CalendarIcon size={18} className="text-blue-600" />
-                <div>
-                  <p className="font-bold text-slate-900 text-sm">Selecione o período</p>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Clique no início e depois no fim</p>
-                </div>
+              <PremiumDatePicker
+                range={localRange}
+                setRange={handleRangeSelect}
+              />
+              <div className="w-full pt-3 mt-3 border-t border-white/10 flex items-center justify-between font-mono text-[11px] text-white/50">
+                <span>Clique 1: Retirada · Clique 2: Devolução</span>
+                <button 
+                  type="button" 
+                  onClick={() => setIsOpen(false)}
+                  className="text-[#FF1717] font-bold hover:underline cursor-pointer"
+                >
+                  Confirmar
+                </button>
               </div>
-              <PremiumDatePicker range={localRange} setRange={handleRangeSelect} disabled={(day) => day < startOfDay(new Date())} />
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      <div className="hidden lg:flex items-center gap-4 px-6 border-l border-slate-200 shrink-0">
-        {isSearchActive ? (
-          <>
-            <div className="flex items-center gap-2">
-              <div className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-              </div>
-              <span className="text-xs font-bold text-slate-700">Filtro Ativo</span>
-            </div>
-            <button 
-              onClick={() => { onClear(); setIsOpen(false); setLocalRange(undefined); }}
-              className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-slate-400 hover:text-red-500 transition-colors"
-            >
-              <XCircle size={14} /> Limpar
-            </button>
-          </>
-        ) : (
-          <div className="flex items-center gap-2 opacity-50">
-            <CalendarDays size={16} className="text-slate-400" />
-            <span className="text-xs font-bold text-slate-400">Sem datas</span>
-          </div>
+      <div className="flex items-center gap-2 px-2">
+        {isSearchActive && (
+          <button 
+            type="button"
+            onClick={onClear} 
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-white/5 hover:bg-white/10 text-white/70 hover:text-white font-mono text-xs font-bold transition-all border border-white/10 cursor-pointer"
+          >
+            <RotateCcw size={14} className="text-[#FF1717]" />
+            <span>Limpar Filtro</span>
+          </button>
         )}
       </div>
     </motion.div>

@@ -7,45 +7,44 @@ plugins {
 version = "0.1"
 group = "com.example"
 
-
-
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    // --- MANTÉM OS PROCESSADORES ORIGINAIS ---
+    // --- PROCESSADORES ORIGINAIS ---
     annotationProcessor("io.micronaut:micronaut-http-validation")
     annotationProcessor("io.micronaut.serde:micronaut-serde-processor")
     
-    // --- 🟢 NOVOS PROCESSADORES PARA JPA E SEGURANÇA ---
+    // --- PROCESSADORES PARA JPA, SEGURANÇA E OPENAPI ---
     annotationProcessor("io.micronaut.data:micronaut-data-processor")
     annotationProcessor("io.micronaut.security:micronaut-security-annotations")
+    annotationProcessor("io.micronaut.openapi:micronaut-openapi")
+    compileOnly("io.micronaut.openapi:micronaut-openapi-annotations")
 
-    // --- MANTÉM ---
+    // --- SERIALIZAÇÃO E DADOS ---
     implementation("io.micronaut.serde:micronaut-serde-jackson")
-
-    // --- 🟢 NOVAS DEPENDÊNCIAS DE BANCO DE DADOS E JWT ---
-    // 1. Micronaut Data (Hibernate/JPA) e Conexão Hikari
     implementation("io.micronaut.data:micronaut-data-hibernate-jpa")
     implementation("io.micronaut.sql:micronaut-jdbc-hikari")
-    // 2. Driver do PostgreSQL (só precisamos na hora de rodar)
+    runtimeOnly("com.h2database:h2")
     runtimeOnly("org.postgresql:postgresql")
-    // 3. Suporte a programação reativa (Flux/Mono) para a Segurança
+
+    // --- SEGURANÇA E JWT ---
     implementation("io.micronaut.security:micronaut-security-jwt")   
     implementation("io.micronaut.reactor:micronaut-reactor")
 
-    // --- MANTÉM OS OUTROS ORIGINAIS ---
+    // --- HTTP CLIENT E LOGS ---
     compileOnly("io.micronaut:micronaut-http-client")
     runtimeOnly("ch.qos.logback:logback-classic")
     testImplementation("io.micronaut:micronaut-http-client")
+    testImplementation("com.h2database:h2")
+    testImplementation("org.mockito:mockito-core:5.14.2")
+    testImplementation("org.mockito:mockito-junit-jupiter:5.14.2")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
     // Criptografia de Senhas
     implementation("org.mindrot:jbcrypt:0.4")   
 }
-
-
 
 application {
     mainClass = "com.example.Application"
@@ -56,14 +55,7 @@ java {
     targetCompatibility = JavaVersion.toVersion("21")
 }
 
-
-
-
 graalvmNative.toolchainDetection = false
-
-
-
-
 
 micronaut {
     runtime("netty")
@@ -73,8 +65,6 @@ micronaut {
         annotations("com.aluguel.*", "com.example.*")
     }
     aot {
-        // Please review carefully the optimizations enabled below
-        // Check https://micronaut-projects.github.io/micronaut-aot/latest/guide/ for more details
         optimizeServiceLoading = false
         convertYamlToJava = false
         precomputeOperations = true
@@ -84,14 +74,11 @@ micronaut {
         optimizeNetty = true
         replaceLogbackXml = true
     }
-
 }
-
 
 tasks.named<io.micronaut.gradle.docker.NativeImageDockerfile>("dockerfileNative") {
     jdkVersion = "21"
 }
-
 
 // Faz o comando 'gradlew run' ler o arquivo .env automaticamente
 tasks.named<JavaExec>("run") {
@@ -106,7 +93,3 @@ tasks.named<JavaExec>("run") {
         }
     }
 }
-
-
-
-

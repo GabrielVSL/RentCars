@@ -4,7 +4,7 @@ import { useUIStore } from '../store/useUIStore';
 
 // Cria a instância base apontando para o seu Micronaut
 export const api = axios.create({
-  baseURL: 'http://localhost:8080',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8080',
 });
 
 // Interceptor de REQUISIÇÃO: Injeta o token antes de ir pro Java
@@ -36,7 +36,7 @@ api.interceptors.response.use(
       // Abre o modal de login para ele entrar de novo
       useUIStore.getState().setAuthView('login');
       
-      alert("Sua sessão expirou. Por favor, faça login novamente.");
+
     }
     
     return Promise.reject(error);

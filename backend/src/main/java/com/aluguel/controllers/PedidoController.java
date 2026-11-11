@@ -2,6 +2,8 @@ package com.aluguel.controllers;
 
 import com.aluguel.facades.PedidoFacade;
 import com.aluguel.models.Pedido;
+import com.aluguel.queue.ReservaMensagem;
+import com.aluguel.queue.ReservaQueueEngine;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.annotation.*;
 import io.micronaut.security.annotation.Secured;
@@ -13,9 +15,11 @@ import java.util.Map;
 public class PedidoController {
 
     private final PedidoFacade facade;
+    private final ReservaQueueEngine queueEngine;
 
-    public PedidoController(PedidoFacade facade) {
+    public PedidoController(PedidoFacade facade, ReservaQueueEngine queueEngine) {
         this.facade = facade;
+        this.queueEngine = queueEngine;
     }
 
     // Apenas CLIENTES podem fazer pedidos de aluguel
@@ -26,6 +30,24 @@ public class PedidoController {
             Pedido salvo = facade.criarPedido(pedido, principal.getName());
             return HttpResponse.created(salvo);
         } catch (IllegalArgumentException e) {
+            return HttpResponse.badRequest(Map.of("message", e.getMessage()));
+        }
+    }
+
+    // Criação de pré-reserva assíncrona com fila e retorno HTTP 202 Accepted
+    @Post("/async")
+    @Secured("ROLE_CLIENTE")
+    public HttpResponse<?> criarAssincrono(@Body ReservaMensagem msg, Principal principal) {
+        try {
+            msg.setEmailCliente(principal.getName());
+            ReservaMensagem enfileirada = queueEngine.enfileirar(msg);
+            return HttpResponse.accepted().body(Map.of(
+                    "status", "ACCEPTED",
+                    "trackingId", enfileirada.getTrackingId(),
+                    "message", "Agendamento aceito e enfileirado para processamento assíncrono.",
+                    "dataHora", enfileirada.getDataHoraEnfileiramento()
+            ));
+        } catch (Exception e) {
             return HttpResponse.badRequest(Map.of("message", e.getMessage()));
         }
     }
