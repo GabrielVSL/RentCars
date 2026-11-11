@@ -111,4 +111,20 @@ class AutomovelFacadeTest {
         assertEquals("Corolla", frota.get(0).getModelo());
         assertEquals("Civic", frota.get(1).getModelo());
     }
+
+    @Test
+    @DisplayName("Deve buscar automóvel por ID ou lançar exceção quando inexistente")
+    void deveBuscarPorIdOuLancarExcecao() {
+        Automovel carro = new Automovel();
+        carro.setId(7L);
+        carro.setModelo("911 GT3 RS (992)");
+
+        when(automovelRepository.findById(7L)).thenReturn(Optional.of(carro));
+        when(automovelRepository.findById(999L)).thenReturn(Optional.empty());
+
+        Automovel encontrado = automovelFacade.buscarPorId(7L);
+        assertEquals("911 GT3 RS (992)", encontrado.getModelo());
+
+        assertThrows(IllegalArgumentException.class, () -> automovelFacade.buscarPorId(999L));
+    }
 }

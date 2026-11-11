@@ -10,6 +10,7 @@ import ToastContainer from '@/components/ui/ToastContainer';
 
 import AuthModule from '@/components/auth/AuthModule';
 import CarsPage from '@/features/cars/pages/CarsPage.tsx';
+import CarDetailPage from '@/features/cars/pages/CarDetailPage.tsx';
 import FrotaPage from '@/features/cars/pages/FrotaPage.tsx';
 import PistasPage from '@/features/circuits/pages/PistasPage';
 
@@ -39,6 +40,7 @@ export default function App() {
 
           {/* Rota pública de catálogo */}
           <Route path="/cars" element={<PageTransition><CarsPage /></PageTransition>} />
+          <Route path="/cars/:id" element={<PageTransition><CarDetailPage /></PageTransition>} />
 
           {/* Rota exclusiva para Locadoras/Empresas */}
           <Route

@@ -310,12 +310,12 @@ export default function PistasPage() {
                   className="group p-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.08] hover:border-white/25 backdrop-blur-md transition-all duration-300 cursor-pointer flex flex-col justify-between shadow-sm"
                   title={`Reservar ${car.brand} ${car.model}`}
                 >
-                  <div className="aspect-[16/10] w-full rounded-lg bg-black/40 mb-1.5 overflow-hidden flex items-center justify-center">
+                  <div className="aspect-[16/10] w-full rounded-lg bg-gradient-to-b from-white/[0.04] to-black/50 mb-1.5 overflow-hidden flex items-center justify-center p-1.5">
                     <img
                       src={car.image}
                       alt={car.model}
                       loading="lazy"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="w-full h-full object-contain drop-shadow-[0_6px_12px_rgba(0,0,0,0.85)] group-hover:scale-105 transition-transform duration-300"
                     />
                   </div>
 

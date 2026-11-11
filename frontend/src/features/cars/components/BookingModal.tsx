@@ -11,6 +11,7 @@ import { toast } from '@/store/useToastStore';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useUIStore } from '@/store/useUIStore';
 import { useCurrencyStore } from '@/store/useCurrencyStore';
+import { resolveStudioCarImage } from '@/lib/carPresentation';
 
 export interface Automovel {
     id: number;
@@ -21,6 +22,16 @@ export interface Automovel {
     placa: string;
     imageUrl?: string;
     precoPorDia?: number;
+    potenciaCv?: number;
+    aceleracao0a100?: string;
+    velocidadeMaxima?: string;
+    categoria?: string;
+    ativoBox?: boolean;
+    circuito?: {
+        id: string;
+        nome: string;
+        pais?: string;
+    };
 }
 
 interface BookingModalProps {
@@ -29,12 +40,35 @@ interface BookingModalProps {
     car: Automovel | null;
 }
 
-function getCarCircuitInfo(modelo: string, marca: string) {
-    const m = (modelo + ' ' + marca).toLowerCase();
-    if (m.includes('gt3') || m.includes('porsche')) return { circuit: 'Nürburgring Nordschleife', flag: '🇩🇪', code: 'NBR-GRN' };
-    if (m.includes('m4') || m.includes('bmw')) return { circuit: 'Bugatti Circuit Le Mans', flag: '🇫🇷', code: 'LMS-24' };
-    if (m.includes('amg') || m.includes('mercedes')) return { circuit: 'Spa-Francorchamps', flag: '🇧🇪', code: 'SPA-EAU' };
-    return { circuit: 'Autodromo di Monza', flag: '🇮🇹', code: 'MNZ-PAR' };
+const CIRCUIT_META_BY_ID: Record<string, { circuit: string; flag: string; code: string }> = {
+    nurburgring: { circuit: 'Nürburgring Nordschleife', flag: '🇩🇪', code: 'NBR-GRN' },
+    spa: { circuit: 'Spa-Francorchamps', flag: '🇧🇪', code: 'SPA-EAU' },
+    monza: { circuit: 'Autodromo Nazionale Monza', flag: '🇮🇹', code: 'MNZ-PAR' },
+    monaco: { circuit: 'Circuit de Monaco', flag: '🇲🇨', code: 'MCO-GP' },
+    le_mans: { circuit: 'Circuit de la Sarthe (Le Mans)', flag: '🇫🇷', code: 'LMS-24' },
+    silverstone: { circuit: 'Silverstone Circuit', flag: '🇬🇧', code: 'SLV-UK' },
+    interlagos: { circuit: 'Autódromo de Interlagos', flag: '🇧🇷', code: 'INT-SP' },
+    suzuka: { circuit: 'Suzuka International', flag: '🇯🇵', code: 'SZK-JP' },
+};
+
+function getCarCircuitInfo(car: Automovel) {
+    if (car.circuito?.id && CIRCUIT_META_BY_ID[car.circuito.id]) {
+        return CIRCUIT_META_BY_ID[car.circuito.id];
+    }
+    const m = `${car.modelo} ${car.marca}`.toLowerCase();
+    if (m.includes('cayman') || m.includes('gt4')) return CIRCUIT_META_BY_ID.monaco;
+    if (m.includes('gt3') || m.includes('porsche')) return CIRCUIT_META_BY_ID.nurburgring;
+    if (m.includes('m8')) return CIRCUIT_META_BY_ID.le_mans;
+    if (m.includes('m4') || m.includes('bmw')) return CIRCUIT_META_BY_ID.spa;
+    if (m.includes('black series')) return CIRCUIT_META_BY_ID.silverstone;
+    if (m.includes('amg') || m.includes('mercedes')) return CIRCUIT_META_BY_ID.monza;
+    if (m.includes('e-tron') || m.includes('etron')) return CIRCUIT_META_BY_ID.suzuka;
+    return CIRCUIT_META_BY_ID.interlagos;
+
+
+
+
+
 }
 
 export function BookingModal({ isOpen, onClose, car }: BookingModalProps) {
@@ -143,7 +177,7 @@ export function BookingModal({ isOpen, onClose, car }: BookingModalProps) {
 
     if (!car) return null;
 
-    const circuitInfo = getCarCircuitInfo(car.modelo, car.marca);
+    const circuitInfo = getCarCircuitInfo(car);
 
     return (
         <AnimatePresence>
@@ -171,7 +205,7 @@ export function BookingModal({ isOpen, onClose, car }: BookingModalProps) {
                             <div className="w-full aspect-[16/10] rounded-2xl overflow-hidden shadow-2xl border border-white/10 my-6 relative group bg-gradient-to-b from-[#181B24] to-[#0A0B0E] p-4 flex items-center justify-center">
                                 {car.imageUrl ? (
                                     <img 
-                                        src={car.imageUrl} 
+                                        src={resolveStudioCarImage(car)} 
                                         alt={car.modelo} 
                                         className="w-full h-full object-contain filter drop-shadow-[0_15px_20px_rgba(0,0,0,0.8)] group-hover:scale-105 transition-transform duration-500" 
                                     />

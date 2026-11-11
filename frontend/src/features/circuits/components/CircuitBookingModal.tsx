@@ -206,11 +206,11 @@ export default function CircuitBookingModal({
                               : 'border-white/10 bg-white/5 hover:border-white/20'
                           }`}
                         >
-                          <div className="aspect-[16/10] w-full rounded-lg bg-black/40 mb-2 overflow-hidden">
+                          <div className="aspect-[16/10] w-full rounded-lg bg-gradient-to-b from-white/[0.04] to-black/50 mb-2 overflow-hidden flex items-center justify-center p-1.5">
                             <img
                               src={car.image}
                               alt={car.model}
-                              className="w-full h-full object-cover"
+                              className="w-full h-full object-contain drop-shadow-[0_6px_12px_rgba(0,0,0,0.85)]"
                             />
                           </div>
                           <div>

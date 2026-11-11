@@ -9,46 +9,87 @@
 *.tar.gz
 *.rar
 .gradle/
+.kotlin/
 .micronaut/
 build/
 bin/
 out/
+target/
+gradle-app.setting
 hs_err_pid*
 replay_pid*
+*.hprof
+*.pid
 *.mv.db
 *.trace.db
+*.lock.db
+*.temp.db
+*.h2.db
 
-# --- NODE / VITE / FRONTEND ---
+# --- NODE / VITE / TYPESCRIPT / VITEST ---
 node_modules/
 dist/
 dist-ssr/
+.vite/
+coverage/
+.nyc_output/
+*.tsbuildinfo
+.eslintcache
+test-results/
+playwright-report/
+blob-report/
 *.local
 
 # --- SEGURANÇA & AMBIENTE ---
 .env
 .env.*
 !.env.example
+!.env.*.example
 *.jks
 *.p12
+*.pfx
 *.pem
+*.key
+*.crt
 
 # --- LOGS & TEMPORÁRIOS ---
+logs/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 *.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
 *.part
 *.ytdl
 
-# --- FERRAMENTAS & IDEs ---
+# --- FERRAMENTAS, AGENTES IA & IDEs ---
 .openclaude-profile.json
 .claude/
+.gemini/
+.agent/
+.agents/
+.cursor/
+.windsurf/
 .idea/
 *.iml
+*.ipr
+*.iws
 .vscode/
 .settings/
 .classpath
 .project
+.factorypath
 .nb-gradle/
 
 # --- SISTEMA OPERACIONAL ---
 Thumbs.db
+ehthumbs.db
+Desktop.ini
 .DS_Store
+._*

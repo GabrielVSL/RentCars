@@ -29,7 +29,7 @@ export const TRACK_FLEET: Record<string, TrackCar> = {
     power: '525 CV',
     acceleration: '3.2s',
     topSpeed: '296 KM/H',
-    image: '/cars/porsche.jpg',
+    image: '/cars/porsche-studio.webp',
   },
   bmw: {
     id: 'bmw-m4-comp',
@@ -38,7 +38,7 @@ export const TRACK_FLEET: Record<string, TrackCar> = {
     power: '510 CV',
     acceleration: '3.5s',
     topSpeed: '290 KM/H',
-    image: '/cars/bmw.jpg',
+    image: '/cars/bmw-studio.webp',
   },
   amg: {
     id: 'amg-gt-track',
@@ -47,7 +47,7 @@ export const TRACK_FLEET: Record<string, TrackCar> = {
     power: '734 CV',
     acceleration: '2.8s',
     topSpeed: '315 KM/H',
-    image: '/cars/amg.jpg',
+    image: '/cars/amg-studio.webp',
   },
   audi: {
     id: 'audi-r8-v10',
@@ -56,7 +56,43 @@ export const TRACK_FLEET: Record<string, TrackCar> = {
     power: '620 CV',
     acceleration: '3.1s',
     topSpeed: '331 KM/H',
-    image: '/cars/audi.jpg',
+    image: '/cars/audi-studio.webp',
+  },
+  cayman: {
+    id: 'porsche-cayman-gt4rs',
+    brand: 'Porsche',
+    model: '718 Cayman GT4 RS',
+    power: '500 CV',
+    acceleration: '3.4s',
+    topSpeed: '315 KM/H',
+    image: '/cars/cayman-studio.webp',
+  },
+  m8: {
+    id: 'bmw-m8-comp',
+    brand: 'BMW',
+    model: 'M8 Competition Coupé',
+    power: '625 CV',
+    acceleration: '3.2s',
+    topSpeed: '305 KM/H',
+    image: '/cars/m8-studio.webp',
+  },
+  amgBs: {
+    id: 'amg-gt-black-series',
+    brand: 'Mercedes-AMG',
+    model: 'GT Black Series',
+    power: '730 CV',
+    acceleration: '3.2s',
+    topSpeed: '325 KM/H',
+    image: '/cars/amg-bs-studio.webp',
+  },
+  etronGt: {
+    id: 'audi-rs-etron-gt',
+    brand: 'Audi',
+    model: 'RS e-tron GT Performance',
+    power: '925 CV',
+    acceleration: '2.5s',
+    topSpeed: '250 KM/H',
+    image: '/cars/etrongt-studio.webp',
   },
 };
 
@@ -182,7 +218,7 @@ export const CIRCUITS: Circuit[] = [
     videoThumbnail: '/circuits/le_mans-video.jpg',
     synopsis: "Palco lendário das 24 Horas de Le Mans, este circuito combina o traçado de pista fechada com estradas rurais históricas da França. Sinta a velocidade contínua na reta Mulsanne em sessões exclusivas de track day com mecânicos de apoio dedicados e credencial VIP para o paddock.",
     nextDates: ['18 Nov · Ter', '29 Nov · Sáb', '13 Dez · Dom'],
-    availableCars: [TRACK_FLEET.porsche, TRACK_FLEET.audi, TRACK_FLEET.amg],
+    availableCars: [TRACK_FLEET.m8, TRACK_FLEET.porsche, TRACK_FLEET.amg],
     "sectors": [
       {
         "name": "Sector 1 (Dunlop / Tertre Rouge)",
@@ -320,7 +356,7 @@ export const CIRCUITS: Circuit[] = [
     videoThumbnail: '/circuits/monaco-video.jpg',
     synopsis: "O traçado urbano mais glamoroso e lendário do automobilismo. Pilotar pelas avenidas de Monte Carlo, contornar a curva do Cassino e atravessar o famoso túnel à beira do Mar Mediterrâneo é uma experiência inesquecível com atendimento exclusivo de concierge.",
     nextDates: ['20 Nov · Qui', '28 Nov · Sex', '12 Dez · Sex'],
-    availableCars: [TRACK_FLEET.porsche, TRACK_FLEET.amg],
+    availableCars: [TRACK_FLEET.cayman, TRACK_FLEET.porsche, TRACK_FLEET.amg],
     "sectors": [
       {
         "name": "Sector 1 (Sainte-Dévote / Beau Rivage)",
@@ -366,7 +402,7 @@ export const CIRCUITS: Circuit[] = [
     videoThumbnail: '/circuits/silverstone-video.jpg',
     synopsis: "O berço histórico da Fórmula 1 e capital do motorsport britânico. Com curvas de altíssima velocidade como Copse, Maggotts e Becketts, Silverstone testa a precisão aerodinâmica do carro. Nossa equipe recepciona você no complexo The Wing com estrutura de box privativo.",
     nextDates: ['19 Nov · Qua', '27 Nov · Qui', '10 Dez · Qua'],
-    availableCars: [TRACK_FLEET.bmw, TRACK_FLEET.porsche, TRACK_FLEET.amg],
+    availableCars: [TRACK_FLEET.amgBs, TRACK_FLEET.bmw, TRACK_FLEET.porsche],
     "sectors": [
       {
         "name": "Sector 1 (Abbey / Copse)",
@@ -458,7 +494,7 @@ export const CIRCUITS: Circuit[] = [
     videoThumbnail: '/circuits/suzuka-video.jpg',
     synopsis: "Famoso por seu desenho em formato de '8' com cruzamento em desnível e pelas míticas curvas dos Esses e da 130R, Suzuka é a obra-prima das pistas asiáticas. Desfrute de voltas rápidas com suporte operacional completo no pitlane oficial.",
     nextDates: ['25 Nov · Ter', '02 Dez · Ter', '16 Dez · Ter'],
-    availableCars: [TRACK_FLEET.amg, TRACK_FLEET.porsche, TRACK_FLEET.bmw],
+    availableCars: [TRACK_FLEET.etronGt, TRACK_FLEET.amg, TRACK_FLEET.bmw],
     "sectors": [
       {
         "name": "Sector 1 (S Curves / Dunlop)",

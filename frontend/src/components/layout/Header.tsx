@@ -178,7 +178,7 @@ export default function Header({ transparent = false }: HeaderProps) {
         {(!user || user.role === 'CLIENTE') && (
           <Link to="/cars" className={cls}>Frota</Link>
         )}
-        <a href="/#race-control-map" className={cls}>Telemetria</a>
+        <Link to="/pistas" className={cls}>Telemetria</Link>
 
         {(user?.role === 'EMPRESA' || user?.role === 'BANCO') && (
           <Link to="/pedidos" className={cls}>Sessões</Link>

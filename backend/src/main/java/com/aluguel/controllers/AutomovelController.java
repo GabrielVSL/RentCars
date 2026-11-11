@@ -46,7 +46,7 @@ public class AutomovelController {
             return HttpResponse.badRequest(Map.of("message", e.getMessage()));
         }
     }
-    
+
     @Put("/{id}")
     @Secured("ROLE_EMPRESA")
     public HttpResponse<?> atualizar(@PathVariable Long id, @Body Automovel automovel, Principal principal) {
@@ -68,20 +68,30 @@ public class AutomovelController {
         }
     }
 
+    @Get("/{id}")
+    @Secured(SecurityRule.IS_ANONYMOUS)
+    public HttpResponse<?> buscarPorId(@PathVariable Long id) {
+        try {
+            return HttpResponse.ok(facade.buscarPorId(id));
+        } catch (IllegalArgumentException e) {
+            return HttpResponse.notFound(Map.of("message", e.getMessage()));
+        }
+    }
+
     @Get
     @Secured(SecurityRule.IS_ANONYMOUS)
     public HttpResponse<?> listarAutomoveis(
-            @Nullable @QueryValue String inicio, 
+            @Nullable @QueryValue String inicio,
             @Nullable @QueryValue String fim) {
-        
+
         try {
             if (inicio != null && fim != null) {
                 LocalDateTime dataInicio = LocalDateTime.parse(inicio);
                 LocalDateTime dataFim = LocalDateTime.parse(fim);
-                
+
                 return HttpResponse.ok(automovelRepository.findDisponiveis(dataInicio, dataFim));
             }
-            
+
             return HttpResponse.ok(facade.listarTodos());
         } catch (Exception e) {
             return HttpResponse.badRequest(Map.of("message", e.getMessage()));

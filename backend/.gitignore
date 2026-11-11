@@ -1,17 +1,39 @@
+# OS & Temp
 Thumbs.db
+Desktop.ini
 .DS_Store
-.gradle
+*.log
+
+# Gradle / Micronaut / Java
 .gradle/
+.kotlin/
+.micronaut/
 build/
+bin/
 target/
 out/
-.micronaut/
-.idea
+gradle-app.setting
+*.class
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+hs_err_pid*
+replay_pid*
+*.hprof
+*.mv.db
+*.trace.db
+*.lock.db
+
+# IDEs
+.idea/
 *.iml
 *.ipr
 *.iws
 .project
-.settings
+.settings/
 .classpath
 .factorypath
+
+# Ambiente & Segredos
 .env
+.env.*
+!.env.example

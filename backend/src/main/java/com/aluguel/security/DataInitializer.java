@@ -95,7 +95,7 @@ public class DataInitializer {
             for (Circuito c : circuitosMap.values()) {
                 for (int d = 1; d <= 14; d++) {
                     LocalDate dataSlot = hoje.plusDays(d);
-                    
+
                     TrackSlot slotManha = new TrackSlot(c, dataSlot, "MANHA", 12);
                     slotManha.setVagasOcupadas(d % 3 == 0 ? 4 : 1);
                     slotManha.setTaxaAdicionalTurno(BigDecimal.ZERO);
@@ -211,76 +211,61 @@ public class DataInitializer {
             cliente.setRendimentos(rendimentos);
             clienteRepository.save(cliente);
 
-            // 3. Cadastra a frota de Supercarros alocados nos boxes dos autódromos
-            Automovel carro1 = new Automovel();
-            carro1.setMarca("Porsche");
-            carro1.setModelo("911 GT3 RS (992)");
-            carro1.setAno(2024);
-            carro1.setMatricula("POR-GT3RS-2024");
-            carro1.setPlaca("GT39E92");
-            carro1.setPrecoPorDia(new BigDecimal("3850.00"));
-            carro1.setImageUrl("/cars/porsche.jpg");
-            carro1.setPotenciaCv(525);
-            carro1.setAceleracao0a100("3.2s");
-            carro1.setVelocidadeMaxima("296 km/h");
-            carro1.setCategoria("GT3");
-            carro1.setCircuito(circuitosMap.get("nurburgring"));
-            carro1.setAtivoBox(true);
-            carro1.setProprietario(empresa);
-            automovelRepository.save(carro1);
+            // 3. Cadastra os 8 Supercarros alocados nos boxes dos 8 autódromos (2 por montadora)
+            registrarAutomovel("Porsche", "911 GT3 RS (992)", 2024, "POR-GT3RS-2024", "GT39E92",
+                    "3850.00", "/cars/porsche-studio.webp", 525, "3.2s", "296 km/h", "GT3",
+                    circuitosMap.get("nurburgring"), empresa);
 
-            Automovel carro2 = new Automovel();
-            carro2.setMarca("BMW");
-            carro2.setModelo("M4 Competition Track");
-            carro2.setAno(2024);
-            carro2.setMatricula("BMW-M4C-2024");
-            carro2.setPlaca("M4C8E20");
-            carro2.setPrecoPorDia(new BigDecimal("2750.00"));
-            carro2.setImageUrl("/cars/bmw.jpg");
-            carro2.setPotenciaCv(510);
-            carro2.setAceleracao0a100("3.5s");
-            carro2.setVelocidadeMaxima("290 km/h");
-            carro2.setCategoria("GT4");
-            carro2.setCircuito(circuitosMap.get("spa"));
-            carro2.setAtivoBox(true);
-            carro2.setProprietario(empresa);
-            automovelRepository.save(carro2);
+            registrarAutomovel("BMW", "M4 Competition Track", 2024, "BMW-M4C-2024", "M4C8E20",
+                    "2750.00", "/cars/bmw-studio.webp", 510, "3.5s", "290 km/h", "GT4",
+                    circuitosMap.get("spa"), empresa);
 
-            Automovel carro3 = new Automovel();
-            carro3.setMarca("Mercedes-AMG");
-            carro3.setModelo("GT Track Series");
-            carro3.setAno(2024);
-            carro3.setMatricula("AMG-GTR-2024");
-            carro3.setPlaca("AMG9E00");
-            carro3.setPrecoPorDia(new BigDecimal("3950.00"));
-            carro3.setImageUrl("/cars/amg.jpg");
-            carro3.setPotenciaCv(734);
-            carro3.setAceleracao0a100("2.8s");
-            carro3.setVelocidadeMaxima("315 km/h");
-            carro3.setCategoria("GT2");
-            carro3.setCircuito(circuitosMap.get("monza"));
-            carro3.setAtivoBox(true);
-            carro3.setProprietario(empresa);
-            automovelRepository.save(carro3);
+            registrarAutomovel("Mercedes-AMG", "GT Track Series", 2024, "AMG-GTR-2024", "AMG9E00",
+                    "3950.00", "/cars/amg-studio.webp", 734, "2.8s", "315 km/h", "GT2",
+                    circuitosMap.get("monza"), empresa);
 
-            Automovel carro4 = new Automovel();
-            carro4.setMarca("Audi");
-            carro4.setModelo("R8 V10 Performance");
-            carro4.setAno(2024);
-            carro4.setMatricula("AUD-R8V10-2024");
-            carro4.setPlaca("R8V1E00");
-            carro4.setPrecoPorDia(new BigDecimal("3400.00"));
-            carro4.setImageUrl("/cars/audi.jpg");
-            carro4.setPotenciaCv(620);
-            carro4.setAceleracao0a100("3.1s");
-            carro4.setVelocidadeMaxima("331 km/h");
-            carro4.setCategoria("GT3");
-            carro4.setCircuito(circuitosMap.get("interlagos"));
-            carro4.setAtivoBox(true);
-            carro4.setProprietario(empresa);
-            automovelRepository.save(carro4);
+            registrarAutomovel("Audi", "R8 V10 Performance", 2024, "AUD-R8V10-2024", "R8V1E00",
+                    "3400.00", "/cars/audi-studio.webp", 620, "3.1s", "331 km/h", "GT3",
+                    circuitosMap.get("interlagos"), empresa);
 
-            log.info("Apex Track Experience: 8 autódromos, TrackSlots de 14 dias, frota de supercarros e perfis de teste inicializados.");
+            registrarAutomovel("Porsche", "718 Cayman GT4 RS", 2024, "POR-GT4RS-2024", "GT48E71",
+                    "3100.00", "/cars/cayman-studio.webp", 500, "3.4s", "315 km/h", "GT4",
+                    circuitosMap.get("monaco"), empresa);
+
+            registrarAutomovel("BMW", "M8 Competition Coupé", 2024, "BMW-M8C-2024", "M8C9E92",
+                    "3250.00", "/cars/m8-studio.webp", 625, "3.2s", "305 km/h", "GT3",
+                    circuitosMap.get("le_mans"), empresa);
+
+            registrarAutomovel("Mercedes-AMG", "GT Black Series", 2024, "AMG-GTBS-2024", "AMGBS24",
+                    "4450.00", "/cars/amg-bs-studio.webp", 730, "3.2s", "325 km/h", "GT2",
+                    circuitosMap.get("silverstone"), empresa);
+
+            registrarAutomovel("Audi", "RS e-tron GT Performance", 2025, "AUD-ETRON-2025", "ETR9E25",
+                    "3600.00", "/cars/etrongt-studio.webp", 925, "2.5s", "250 km/h", "ELECTRIC",
+                    circuitosMap.get("suzuka"), empresa);
+
+            log.info("Apex Track Experience: 8 autódromos, TrackSlots de 14 dias, frota de 8 supercarros e perfis de teste inicializados.");
         }
+    }
+
+    private void registrarAutomovel(String marca, String modelo, int ano, String matricula, String placa,
+                                    String precoPorDia, String imageUrl, int potenciaCv, String aceleracao0a100,
+                                    String velocidadeMaxima, String categoria, Circuito circuito, Agente proprietario) {
+        Automovel carro = new Automovel();
+        carro.setMarca(marca);
+        carro.setModelo(modelo);
+        carro.setAno(ano);
+        carro.setMatricula(matricula);
+        carro.setPlaca(placa);
+        carro.setPrecoPorDia(new BigDecimal(precoPorDia));
+        carro.setImageUrl(imageUrl);
+        carro.setPotenciaCv(potenciaCv);
+        carro.setAceleracao0a100(aceleracao0a100);
+        carro.setVelocidadeMaxima(velocidadeMaxima);
+        carro.setCategoria(categoria);
+        carro.setCircuito(circuito);
+        carro.setAtivoBox(true);
+        carro.setProprietario(proprietario);
+        automovelRepository.save(carro);
     }
 }

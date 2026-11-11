@@ -23,6 +23,11 @@ public class AutomovelFacade {
                 .toList();
     }
 
+    public Automovel buscarPorId(Long id) {
+        return automovelRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Automóvel não encontrado."));
+    }
+
     public List<Automovel> listarPorProprietario(String emailProprietario) {
         return automovelRepository.findByProprietarioEmail(emailProprietario);
     }
@@ -30,7 +35,7 @@ public class AutomovelFacade {
     public Automovel criar(Automovel automovel, String emailProprietario) {
         Usuario proprietario = usuarioRepository.findByEmail(emailProprietario)
                 .orElseThrow(() -> new IllegalArgumentException("Proprietário não encontrado"));
-        
+
         automovel.setProprietario(proprietario);
         return automovelRepository.save(automovel);
     }
