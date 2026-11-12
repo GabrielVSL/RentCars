@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useUIStore } from '@/store/useUIStore';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/store/useAuthStore';
 import { User } from 'lucide-react';
 import { motion, useScroll, useMotionValue, useSpring, useTransform } from 'framer-motion';
@@ -36,8 +35,7 @@ export default function Header({ transparent = false }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const navigate = useNavigate();
-  
-  const setAuthView = useUIStore((state) => state.setAuthView);
+  const location = useLocation();
   const { user, logout } = useAuthStore();
 
   // Dimensões do viewport e slot de destino da Navbar
@@ -158,13 +156,13 @@ export default function Header({ transparent = false }: HeaderProps) {
   };
 
   const handleLoginClick = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    setAuthView('login');
+    setMobileMenuOpen(false);
+    navigate('/login', { state: { from: location.pathname } });
   };
 
   const handleRegisterClick = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    setAuthView('register');
+    setMobileMenuOpen(false);
+    navigate('/cadastro', { state: { from: location.pathname } });
   };
 
   const linkClass = "text-sm font-medium tracking-normal text-white/75 hover:text-white transition-colors duration-200";
@@ -175,16 +173,19 @@ export default function Header({ transparent = false }: HeaderProps) {
       <>
         <Link to="/" className={cls}>Início</Link>
         <Link to="/pistas" className={cls}>Pistas</Link>
-        {(!user || user.role === 'CLIENTE') && (
+        {(!user || user.role === 'CLIENTE' || user.role === 'ADMIN') && (
           <Link to="/cars" className={cls}>Frota</Link>
         )}
-        <Link to="/pistas" className={cls}>Telemetria</Link>
+        <a href="/#como-funciona" className={cls}>Como Funciona</a>
 
-        {(user?.role === 'EMPRESA' || user?.role === 'BANCO') && (
+        {user?.role === 'CLIENTE' && <Link to="/apexpay" className={cls}>ApexPay</Link>}
+        {user?.role === 'CLIENTE' && <Link to="/meus-alugueis" className={cls}>Minhas Sessões</Link>}
+
+        {user?.role === 'ADMIN' && <Link to="/admin" className={cls}>Painel Admin</Link>}
+        {(user?.role === 'ADMIN' || user?.role === 'EMPRESA' || user?.role === 'BANCO') && (
           <Link to="/pedidos" className={cls}>Sessões</Link>
         )}
-        {user?.role === 'EMPRESA' && <Link to="/frota" className={cls}>Boxes</Link>}
-        {user?.role === 'CLIENTE' && <Link to="/meus-alugueis" className={cls}>Minhas Sessões</Link>}
+        {(user?.role === 'ADMIN' || user?.role === 'EMPRESA') && <Link to="/frota" className={cls}>Boxes</Link>}
         {user?.role === 'BANCO' && <Link to="/analises" className={cls}>Auditoria</Link>}
       </>
     );

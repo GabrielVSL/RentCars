@@ -3,11 +3,13 @@ package com.aluguel.facades;
 import com.aluguel.models.*;
 import com.aluguel.repositories.*;
 import com.aluguel.utils.CnhValidator;
+import jakarta.inject.Inject;
 import jakarta.inject.Singleton;
 import jakarta.transaction.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -21,27 +23,38 @@ public class PedidoFacade {
     private final AutomovelRepository automovelRepository;
     private final UsuarioRepository usuarioRepository;
     private final TrackSlotRepository trackSlotRepository;
+    private final ApexPayFacade apexPayFacade;
+
+    @Inject
+    public PedidoFacade(PedidoRepository pedidoRepository,
+                        AutomovelRepository automovelRepository,
+                        UsuarioRepository usuarioRepository,
+                        TrackSlotRepository trackSlotRepository,
+                        ApexPayFacade apexPayFacade) {
+        this.pedidoRepository = pedidoRepository;
+        this.automovelRepository = automovelRepository;
+        this.usuarioRepository = usuarioRepository;
+        this.trackSlotRepository = trackSlotRepository;
+        this.apexPayFacade = apexPayFacade;
+    }
 
     public PedidoFacade(PedidoRepository pedidoRepository,
                         AutomovelRepository automovelRepository,
                         UsuarioRepository usuarioRepository,
                         TrackSlotRepository trackSlotRepository) {
-        this.pedidoRepository = pedidoRepository;
-        this.automovelRepository = automovelRepository;
-        this.usuarioRepository = usuarioRepository;
-        this.trackSlotRepository = trackSlotRepository;
+        this(pedidoRepository, automovelRepository, usuarioRepository, trackSlotRepository, null);
     }
 
     public PedidoFacade(PedidoRepository pedidoRepository,
                         AutomovelRepository automovelRepository,
                         UsuarioRepository usuarioRepository) {
-        this(pedidoRepository, automovelRepository, usuarioRepository, null);
+        this(pedidoRepository, automovelRepository, usuarioRepository, null, null);
     }
 
     public List<Map<String, String>> buscarDatasOcupadas(Long automovelId) {
         List<String> statusAtivos = List.of("PENDENTE_EMPRESA", "PENDENTE_BANCO", "APROVADO", "REVISAO_CLIENTE");
         List<Pedido> pedidos = pedidoRepository.findByAutomovelIdAndStatusIn(automovelId, statusAtivos);
-        
+
         return pedidos.stream().map(p -> Map.of(
             "from", p.getDataInicio().toString(),
             "to", p.getDataFim().toString()
@@ -50,12 +63,19 @@ public class PedidoFacade {
 
     @Transactional
     public Pedido criarPedido(Pedido pedido, String emailCliente) {
-        if (pedido.getAutomovel() == null || pedido.getAutomovel().getId() == null) {
-            throw new IllegalArgumentException("Automóvel inválido.");
-        }
+        String servico = pedido.getTipoServico() != null ? pedido.getTipoServico() : "TRACK_EXPERIENCE";
+        boolean isVisitaBox = "VISITA_BOX".equalsIgnoreCase(servico);
 
-        Automovel automovel = automovelRepository.findById(pedido.getAutomovel().getId())
-                .orElseThrow(() -> new IllegalArgumentException("Automóvel não encontrado."));
+        Automovel automovel = null;
+        if (!isVisitaBox) {
+            if (pedido.getAutomovel() == null || pedido.getAutomovel().getId() == null) {
+                throw new IllegalArgumentException("Automóvel inválido.");
+            }
+            automovel = automovelRepository.findById(pedido.getAutomovel().getId())
+                    .orElseThrow(() -> new IllegalArgumentException("Automóvel não encontrado."));
+        } else if (pedido.getAutomovel() != null && pedido.getAutomovel().getId() != null) {
+            automovel = automovelRepository.findById(pedido.getAutomovel().getId()).orElse(null);
+        }
 
         // 1. Validação de Datas
         if (pedido.getDataFim() == null || pedido.getDataInicio() == null) {
@@ -67,22 +87,27 @@ public class PedidoFacade {
         if (pedido.getDataInicio().toLocalDate().isBefore(LocalDate.now())) {
             throw new IllegalArgumentException("O aluguel não pode iniciar no passado.");
         }
+        if (pedido.getDataInicio().getDayOfWeek() == DayOfWeek.MONDAY) {
+            throw new IllegalArgumentException("As pistas permanecem fechadas às segundas-feiras para manutenção FIA e calibração de telemetria. Escolha outra data.");
+        }
 
         // 2. Verificação de Overbooking e Conflitos de Veículo
-        long conflitos = pedidoRepository.countAlugueisConflitantes(
-            automovel.getId(), 
-            pedido.getDataInicio(), 
-            pedido.getDataFim()
-        );
+        if (automovel != null) {
+            long conflitos = pedidoRepository.countAlugueisConflitantes(
+                automovel.getId(),
+                pedido.getDataInicio(),
+                pedido.getDataFim()
+            );
 
-        if (conflitos > 0) {
-            throw new IllegalArgumentException("Este veículo já está reservado para o período selecionado. Por favor, escolha outras datas ou outro veículo.");
+            if (conflitos > 0) {
+                throw new IllegalArgumentException("Este veículo já está reservado para o período selecionado. Por favor, escolha outras datas ou outro veículo.");
+            }
         }
 
         // 3. Vincula o Cliente logado e realiza checagem financeira de Inadimplência (ApexPay)
         Usuario usuario = usuarioRepository.findByEmail(emailCliente)
                 .orElseThrow(() -> new IllegalArgumentException("Cliente não encontrado."));
-        
+
         if (!(usuario instanceof Cliente)) {
             throw new IllegalArgumentException("Apenas clientes podem fazer pedidos de aluguel ou agendamentos de pista.");
         }
@@ -90,16 +115,32 @@ public class PedidoFacade {
         Cliente cliente = (Cliente) usuario;
 
         if (cliente.isInadimplente()) {
-            throw new IllegalArgumentException("Conta com pendências financeiras no ApexPay (Saldo: R$ " + 
+            throw new IllegalArgumentException("Conta com pendências financeiras no ApexPay (Saldo: R$ " +
                     cliente.getSaldoCarteira() + "). Regularize os débitos pendentes para liberar novos agendamentos de autódromo.");
         }
 
+        // Atualiza dados de habilitação enviados no checkout se informados
+        boolean perfilAtualizado = false;
+        if (pedido.getCnhInformada() != null && !pedido.getCnhInformada().isBlank()) {
+            String cnhLimpa = pedido.getCnhInformada().replaceAll("\\D", "");
+            if (!CnhValidator.isValid(cnhLimpa)) {
+                throw new IllegalArgumentException("CNH informada inválida no algoritmo oficial (Módulo 11). Para testes utilize: " + CnhValidator.CNH_TESTE_OFICIAL);
+            }
+            cliente.setCnhNumero(cnhLimpa);
+            perfilAtualizado = true;
+        }
+        if (pedido.getDataNascimentoInformada() != null && !pedido.getDataNascimentoInformada().isBlank()) {
+            cliente.setDataNascimento(LocalDate.parse(pedido.getDataNascimentoInformada()));
+            perfilAtualizado = true;
+        }
+        if (perfilAtualizado) {
+            usuarioRepository.update(cliente);
+        }
+
         // 4. Validações de Elegibilidade de Pilotagem vs Visita/Carona
-        String servico = pedido.getTipoServico() != null ? pedido.getTipoServico() : "TRACK_EXPERIENCE";
         boolean exigePilotagem = "TRACK_EXPERIENCE".equalsIgnoreCase(servico) || "PACOTE_VIP".equalsIgnoreCase(servico);
 
         if (exigePilotagem) {
-            // 4.1 Checagem de Idade Mínima (21 anos para pilotar supercarros em autódromos)
             if (cliente.getDataNascimento() != null) {
                 long idade = ChronoUnit.YEARS.between(cliente.getDataNascimento(), LocalDate.now());
                 if (idade < 21) {
@@ -107,15 +148,14 @@ public class PedidoFacade {
                 }
             }
 
-            // 4.2 Validação algorítmica de CNH (Módulo 11 oficial)
             String cnh = cliente.getCnhNumero();
             if (cnh == null || !CnhValidator.isValid(cnh)) {
-                throw new IllegalArgumentException("CNH válida obrigatória para pilotagem em pista (Módulo 11). Use o número de homologação oficial de teste (" + CnhValidator.CNH_TESTE_OFICIAL + ") ou cadastre uma CNH válida em seu perfil.");
+                throw new IllegalArgumentException("CNH válida obrigatória para pilotagem em pista (Módulo 11). Informe sua CNH ou utilize a de teste oficial (" + CnhValidator.CNH_TESTE_OFICIAL + ").");
             }
         }
 
         // 5. Verificação e Reserva do TrackSlot (Vagas de Box no Autódromo)
-        if (pedido.getTrackSlot() != null && pedido.getTrackSlot().getId() != null) {
+        if (pedido.getTrackSlot() != null && pedido.getTrackSlot().getId() != null && trackSlotRepository != null) {
             TrackSlot slot = trackSlotRepository.findById(pedido.getTrackSlot().getId())
                     .orElseThrow(() -> new IllegalArgumentException("Turno/Slot do autódromo não encontrado."));
 
@@ -131,20 +171,28 @@ public class PedidoFacade {
         pedido.setCliente(cliente);
         pedido.setTipoServico(servico);
 
-        // 6. Cálculo Seguro de Diárias + Taxa de Turno + Desconto de Fidelidade ApexPay
-        long dias = ChronoUnit.DAYS.between(pedido.getDataInicio().toLocalDate(), pedido.getDataFim().toLocalDate());
-        if (dias <= 0) {
-            dias = 1;
+        // 6. Cálculo Seguro por Modalidade de Sessão + Taxa de Turno + Desconto Fidelidade ApexPay
+        BigDecimal valorBase;
+        if (isVisitaBox) {
+            valorBase = new BigDecimal("890.00");
+        } else {
+            long dias = ChronoUnit.DAYS.between(pedido.getDataInicio().toLocalDate(), pedido.getDataFim().toLocalDate());
+            if (dias <= 0) {
+                dias = 1;
+            }
+            BigDecimal precoSessao = automovel.getPrecoPorDia() != null ? automovel.getPrecoPorDia() : BigDecimal.ZERO;
+            BigDecimal multiplicadorServico = switch (servico.toUpperCase()) {
+                case "FAST_LAP" -> new BigDecimal("0.55");
+                case "PACOTE_VIP" -> new BigDecimal("1.70");
+                default -> BigDecimal.ONE;
+            };
+            valorBase = precoSessao.multiply(BigDecimal.valueOf(dias)).multiply(multiplicadorServico).setScale(2, RoundingMode.HALF_UP);
         }
-        BigDecimal precoDiaria = automovel.getPrecoPorDia() != null ? automovel.getPrecoPorDia() : BigDecimal.ZERO;
-        BigDecimal valorBase = precoDiaria.multiply(BigDecimal.valueOf(dias));
 
-        // Adiciona taxa de turno se houver
         if (pedido.getTrackSlot() != null && pedido.getTrackSlot().getTaxaAdicionalTurno() != null) {
             valorBase = valorBase.add(pedido.getTrackSlot().getTaxaAdicionalTurno());
         }
 
-        // Aplica desconto conforme o Tier de Fidelidade (Standard: 0%, Silver: 5%, Gold: 10%, Apex Black: 15%)
         BigDecimal fatorDesconto = cliente.getFatorDesconto();
         BigDecimal desconto = valorBase.multiply(fatorDesconto).setScale(2, RoundingMode.HALF_UP);
         BigDecimal valorFinal = valorBase.subtract(desconto);
@@ -157,9 +205,43 @@ public class PedidoFacade {
             pedido.setTrackingCode("APX-" + System.currentTimeMillis());
         }
 
-        // Nasce na esteira da Direção de Prova
-        pedido.setStatus("PENDENTE_EMPRESA"); 
-        
+        // 7. Processamento Financeiro ApexPay (se solicitado no checkout)
+        String formaPgto = pedido.getFormaPagamento();
+        if (apexPayFacade != null && formaPgto != null) {
+            BigDecimal saldoAtual = cliente.getSaldoCarteira() != null ? cliente.getSaldoCarteira() : BigDecimal.ZERO;
+            if ("CARTEIRA_APEXPAY".equalsIgnoreCase(formaPgto)) {
+                if (saldoAtual.compareTo(valorFinal) < 0) {
+                    throw new IllegalArgumentException(String.format(
+                            "Saldo insuficiente na carteira ApexPay (Saldo: R$ %s | Sessão: R$ %s). Faça um depósito no ApexPay ou escolha Fatura Pós-Paga.",
+                            saldoAtual, valorFinal
+                    ));
+                }
+                apexPayFacade.debitarValorLiquido(
+                        cliente,
+                        valorFinal,
+                        pedido.getTrackingCode(),
+                        String.format("Sessão %s [%s]", servico, pedido.getTrackingCode())
+                );
+                pedido.setPagamentoStatus("PAGO_CARTEIRA");
+                pedido.setStatus("APROVADO");
+            } else if ("FATURA_APEXPAY".equalsIgnoreCase(formaPgto)) {
+                apexPayFacade.debitarValorLiquido(
+                        cliente,
+                        valorFinal,
+                        pedido.getTrackingCode(),
+                        String.format("Fatura Pós-Paga ApexPay %s [%s]", servico, pedido.getTrackingCode())
+                );
+                pedido.setPagamentoStatus(cliente.isInadimplente() ? "DEBITO_ABERTO" : "PAGO_CARTEIRA");
+                pedido.setStatus("PENDENTE_EMPRESA");
+            } else {
+                pedido.setPagamentoStatus("PENDENTE");
+                pedido.setStatus("PENDENTE_EMPRESA");
+            }
+        } else {
+            pedido.setPagamentoStatus("PENDENTE");
+            pedido.setStatus("PENDENTE_EMPRESA");
+        }
+
         return pedidoRepository.save(pedido);
     }
 
@@ -171,30 +253,22 @@ public class PedidoFacade {
                 .orElseThrow(() -> new IllegalArgumentException("Agente não encontrado."));
 
         if (!(usuario instanceof Agente)) {
-            throw new IllegalArgumentException("Apenas agentes podem avaliar pedidos.");
+            throw new IllegalArgumentException("Apenas agentes ou administradores podem avaliar pedidos.");
         }
 
         if ("ROLE_EMPRESA".equals(usuario.getRole())) {
-            if (!pedido.getAutomovel().getProprietario().getEmail().equals(emailAgente)) {
+            if (pedido.getAutomovel() != null && !pedido.getAutomovel().getProprietario().getEmail().equals(emailAgente)) {
                 throw new IllegalArgumentException("Você não tem permissão para avaliar pedidos deste veículo.");
             }
             if (!"PENDENTE_EMPRESA".equals(pedido.getStatus())) {
                 throw new IllegalArgumentException("Este pedido não está aguardando avaliação da sua empresa.");
             }
-            if ("APROVADO".equals(novoStatus)) {
-                pedido.setStatus("PENDENTE_BANCO");
-            } else {
-                pedido.setStatus("REJEITADO");
-            }
+            pedido.setStatus("APROVADO".equals(novoStatus) ? "PENDENTE_BANCO" : "REJEITADO");
         } else if ("ROLE_BANCO".equals(usuario.getRole()) || "ROLE_ADMIN".equals(usuario.getRole())) {
             if (!"PENDENTE_BANCO".equals(pedido.getStatus()) && !"PENDENTE_EMPRESA".equals(pedido.getStatus())) {
-                throw new IllegalArgumentException("Este pedido não está disponível para homologação financeira.");
+                throw new IllegalArgumentException("Este pedido não está disponível para homologação.");
             }
-            if ("APROVADO".equals(novoStatus)) {
-                pedido.setStatus("APROVADO");
-            } else {
-                pedido.setStatus("REJEITADO");
-            }
+            pedido.setStatus("APROVADO".equals(novoStatus) ? "APROVADO" : "REJEITADO");
         } else {
             throw new IllegalArgumentException("Perfil não autorizado para avaliar pedidos.");
         }
@@ -210,8 +284,7 @@ public class PedidoFacade {
         if ("ROLE_EMPRESA".equals(usuario.getRole())) {
             return pedidoRepository.findByAutomovelProprietarioEmail(emailAgente);
         }
-        
-        // ROLE_BANCO e ROLE_ADMIN veem todos os agendamentos da frota
+
         return java.util.stream.StreamSupport.stream(pedidoRepository.findAll().spliterator(), false)
                 .toList();
     }
@@ -220,7 +293,6 @@ public class PedidoFacade {
         return pedidoRepository.findByClienteEmail(emailCliente);
     }
 
-    // A Empresa altera as datas e devolve para o cliente
     public Pedido modificarPedidoAgente(Long idPedido, String emailAgente, Pedido dadosModificados) {
         Pedido pedido = pedidoRepository.findById(idPedido)
                 .orElseThrow(() -> new IllegalArgumentException("Pedido não encontrado."));
@@ -228,11 +300,12 @@ public class PedidoFacade {
         Usuario usuario = usuarioRepository.findByEmail(emailAgente)
                 .orElseThrow(() -> new IllegalArgumentException("Agente não encontrado."));
 
-        if (!"ROLE_EMPRESA".equals(usuario.getRole())) {
-            throw new IllegalArgumentException("Apenas a empresa locadora pode sugerir novas datas.");
+        if (!"ROLE_EMPRESA".equals(usuario.getRole()) && !"ROLE_ADMIN".equals(usuario.getRole())) {
+            throw new IllegalArgumentException("Apenas a empresa locadora ou administração podem sugerir novas datas.");
         }
 
-        if (!pedido.getAutomovel().getProprietario().getEmail().equals(emailAgente)) {
+        if ("ROLE_EMPRESA".equals(usuario.getRole()) && pedido.getAutomovel() != null
+                && !pedido.getAutomovel().getProprietario().getEmail().equals(emailAgente)) {
             throw new IllegalArgumentException("Você não tem permissão para modificar este pedido.");
         }
 
@@ -247,33 +320,34 @@ public class PedidoFacade {
             throw new IllegalArgumentException("O período sugerido não pode iniciar no passado.");
         }
 
-        // Checar conflito com outros pedidos (excluindo este próprio pedido)
-        long conflitos = pedidoRepository.countAlugueisConflitantesExcluindoPedido(
-            pedido.getAutomovel().getId(),
-            pedido.getId(),
-            dadosModificados.getDataInicio(),
-            dadosModificados.getDataFim()
-        );
-        if (conflitos > 0) {
-            throw new IllegalArgumentException("As novas datas conflitam com outra reserva deste automóvel.");
+        if (pedido.getAutomovel() != null) {
+            long conflitos = pedidoRepository.countAlugueisConflitantesExcluindoPedido(
+                pedido.getAutomovel().getId(),
+                pedido.getId(),
+                dadosModificados.getDataInicio(),
+                dadosModificados.getDataFim()
+            );
+            if (conflitos > 0) {
+                throw new IllegalArgumentException("As novas datas conflitam com outra reserva deste automóvel.");
+            }
         }
 
         pedido.setDataInicio(dadosModificados.getDataInicio());
         pedido.setDataFim(dadosModificados.getDataFim());
         pedido.setAgenteAvaliador((Agente) usuario);
 
-        // Recalcular valor total
         long dias = ChronoUnit.DAYS.between(pedido.getDataInicio().toLocalDate(), pedido.getDataFim().toLocalDate());
         if (dias <= 0) dias = 1;
-        BigDecimal precoDiaria = pedido.getAutomovel().getPrecoPorDia() != null ? pedido.getAutomovel().getPrecoPorDia() : BigDecimal.ZERO;
-        pedido.setValorTotal(precoDiaria.multiply(BigDecimal.valueOf(dias)));
+        if (pedido.getAutomovel() != null) {
+            BigDecimal precoDiaria = pedido.getAutomovel().getPrecoPorDia() != null ? pedido.getAutomovel().getPrecoPorDia() : BigDecimal.ZERO;
+            pedido.setValorTotal(precoDiaria.multiply(BigDecimal.valueOf(dias)));
+        }
 
-        pedido.setStatus("REVISAO_CLIENTE"); 
+        pedido.setStatus("REVISAO_CLIENTE");
 
         return pedidoRepository.update(pedido);
     }
 
-    // O Cliente aceita ou recusa a nova proposta
     public Pedido responderContrapropostaCliente(Long idPedido, String emailCliente, boolean aceito) {
         Pedido pedido = pedidoRepository.findById(idPedido)
                 .orElseThrow(() -> new IllegalArgumentException("Pedido não encontrado."));
@@ -290,7 +364,6 @@ public class PedidoFacade {
         return pedidoRepository.update(pedido);
     }
 
-    // Cancelamento do pedido ativo pelo próprio cliente
     public Pedido cancelarPedidoCliente(Long idPedido, String emailCliente) {
         Pedido pedido = pedidoRepository.findById(idPedido)
                 .orElseThrow(() -> new IllegalArgumentException("Pedido não encontrado."));

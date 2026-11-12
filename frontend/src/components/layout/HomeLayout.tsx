@@ -7,6 +7,7 @@ import HeroVideo from '@/features/booking/HeroVideo';
 import { EditorialRideBanner } from '@/features/home/EditorialRideBanner';
 import { BrandShowcaseStrip } from '@/features/home/BrandShowcaseStrip';
 import { FleetCompareSection } from '@/features/home/FleetCompareSection';
+import { ComoFuncionaSection } from '@/features/home/ComoFuncionaSection';
 import { ApexPaySection } from '@/features/home/ApexPaySection';
 import { BookingModal, Automovel } from '@/features/cars/components/BookingModal';
 import { api } from '@/services/api';
@@ -59,7 +60,10 @@ export default function HomeLayout() {
           onSelectCar={handleOpenBooking}
         />
 
-        {/* 5. Seção ApexPay (Cartão 3D, Tiers & Crédito de Pista) */}
+        {/* 5. Como Funciona a Experiência (Regras Arrive & Drive) */}
+        <ComoFuncionaSection />
+
+        {/* 6. Seção ApexPay (Cartão 3D, Tiers & Crédito de Pista) */}
         <ApexPaySection />
       </main>
 

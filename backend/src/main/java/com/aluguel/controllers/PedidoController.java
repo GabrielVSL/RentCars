@@ -22,19 +22,17 @@ public class PedidoController {
         this.queueEngine = queueEngine;
     }
 
-    // Apenas CLIENTES podem fazer pedidos de aluguel
     @Post
     @Secured("ROLE_CLIENTE")
     public HttpResponse<?> criar(@Body Pedido pedido, Principal principal) {
         try {
             Pedido salvo = facade.criarPedido(pedido, principal.getName());
             return HttpResponse.created(salvo);
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | IllegalStateException e) {
             return HttpResponse.badRequest(Map.of("message", e.getMessage()));
         }
     }
 
-    // Criação de pré-reserva assíncrona com fila e retorno HTTP 202 Accepted
     @Post("/async")
     @Secured("ROLE_CLIENTE")
     public HttpResponse<?> criarAssincrono(@Body ReservaMensagem msg, Principal principal) {
@@ -52,9 +50,8 @@ public class PedidoController {
         }
     }
 
-    // Empresas ou Bancos avaliam os pedidos
     @Put("/{id}/avaliar")
-    @Secured({"ROLE_EMPRESA", "ROLE_BANCO"})
+    @Secured({"ROLE_ADMIN", "ROLE_EMPRESA", "ROLE_BANCO"})
     public HttpResponse<?> avaliar(@PathVariable Long id, @QueryValue String status, Principal principal) {
         try {
             Pedido avaliado = facade.avaliarPedido(id, principal.getName(), status);
@@ -65,7 +62,7 @@ public class PedidoController {
     }
 
     @Get
-    @Secured({"ROLE_EMPRESA", "ROLE_BANCO"})
+    @Secured({"ROLE_ADMIN", "ROLE_EMPRESA", "ROLE_BANCO"})
     public HttpResponse<?> listarPedidos(Principal principal) {
         return HttpResponse.ok(facade.listarPedidosParaAgente(principal.getName()));
     }
@@ -81,7 +78,7 @@ public class PedidoController {
     }
 
     @Put("/{id}/modificar")
-    @Secured("ROLE_EMPRESA")
+    @Secured({"ROLE_ADMIN", "ROLE_EMPRESA"})
     public HttpResponse<?> modificar(@PathVariable Long id, @Body Pedido pedido, Principal principal) {
         try {
             return HttpResponse.ok(facade.modificarPedidoAgente(id, principal.getName(), pedido));

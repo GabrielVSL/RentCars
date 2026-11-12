@@ -9,11 +9,11 @@ describe('ProtectedRoute Component', () => {
     useAuthStore.getState().logout();
   });
 
-  it('deve redirecionar para Home quando usuário não estiver autenticado', () => {
+  it('deve redirecionar para /login quando usuário não estiver autenticado', () => {
     render(
       <MemoryRouter initialEntries={['/privado']}>
         <Routes>
-          <Route path="/" element={<div>Página Inicial Home</div>} />
+          <Route path="/login" element={<div>Página de Login</div>} />
           <Route
             path="/privado"
             element={
@@ -26,7 +26,7 @@ describe('ProtectedRoute Component', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByText('Página Inicial Home')).toBeDefined();
+    expect(screen.getByText('Página de Login')).toBeDefined();
     expect(screen.queryByText('Área Exclusiva da Empresa')).toBeNull();
   });
 

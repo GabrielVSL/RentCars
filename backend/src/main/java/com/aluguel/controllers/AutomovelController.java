@@ -24,9 +24,8 @@ public class AutomovelController {
         this.automovelRepository = automovelRepository;
     }
 
-    // APENAS Empresas podem cadastrar carros novos
     @Post
-    @Secured("ROLE_EMPRESA")
+    @Secured({"ROLE_ADMIN", "ROLE_EMPRESA"})
     public HttpResponse<?> criar(@Body Automovel automovel, Principal principal) {
         try {
             Automovel salvo = facade.criar(automovel, principal.getName());
@@ -36,9 +35,8 @@ public class AutomovelController {
         }
     }
 
-    // Listar apenas a frota da empresa logada
     @Get("/minha-frota")
-    @Secured("ROLE_EMPRESA")
+    @Secured({"ROLE_ADMIN", "ROLE_EMPRESA"})
     public HttpResponse<?> listarMinhaFrota(Principal principal) {
         try {
             return HttpResponse.ok(facade.listarPorProprietario(principal.getName()));
@@ -48,7 +46,7 @@ public class AutomovelController {
     }
 
     @Put("/{id}")
-    @Secured("ROLE_EMPRESA")
+    @Secured({"ROLE_ADMIN", "ROLE_EMPRESA"})
     public HttpResponse<?> atualizar(@PathVariable Long id, @Body Automovel automovel, Principal principal) {
         try {
             return HttpResponse.ok(facade.atualizar(id, automovel, principal.getName()));
@@ -58,7 +56,7 @@ public class AutomovelController {
     }
 
     @Delete("/{id}")
-    @Secured("ROLE_EMPRESA")
+    @Secured({"ROLE_ADMIN", "ROLE_EMPRESA"})
     public HttpResponse<?> excluir(@PathVariable Long id, Principal principal) {
         try {
             facade.deletar(id, principal.getName());
@@ -82,9 +80,13 @@ public class AutomovelController {
     @Secured(SecurityRule.IS_ANONYMOUS)
     public HttpResponse<?> listarAutomoveis(
             @Nullable @QueryValue String inicio,
-            @Nullable @QueryValue String fim) {
+            @Nullable @QueryValue String fim,
+            @Nullable @QueryValue String circuitoId) {
 
         try {
+            if (circuitoId != null && !circuitoId.isBlank()) {
+                return HttpResponse.ok(automovelRepository.findDisponiveisNoCircuito(circuitoId));
+            }
             if (inicio != null && fim != null) {
                 LocalDateTime dataInicio = LocalDateTime.parse(inicio);
                 LocalDateTime dataFim = LocalDateTime.parse(fim);

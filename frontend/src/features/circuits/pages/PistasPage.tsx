@@ -1,7 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { CIRCUITS, Circuit, TrackCar, CircuitLiveWeather, getCircuitLiveWeather } from '@/services/telemetryService';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { CIRCUITS, Circuit, CircuitLiveWeather, getCircuitLiveWeather } from '@/services/telemetryService';
+import { api } from '@/services/api';
+import { Automovel } from '@/features/booking/SessionBookingModal';
+import { resolveStudioCarImage, getCarDisplaySpecs } from '@/lib/carPresentation';
 import CircuitBookingModal from '../components/CircuitBookingModal';
 import WorldMapCanvas from '../components/WorldMapCanvas';
 import { CountryFlag } from '@/components/ui/CountryFlag';
@@ -74,7 +77,8 @@ const CIRCUIT_META: Record<string, CircuitDisplayMeta> = {
 
 export default function PistasPage() {
   const [selectedCircuit, setSelectedCircuit] = useState<Circuit>(CIRCUITS[0]);
-  const [selectedCarForBooking, setSelectedCarForBooking] = useState<TrackCar | null>(null);
+  const [fleet, setFleet] = useState<Automovel[]>([]);
+  const [selectedCarForBooking, setSelectedCarForBooking] = useState<Automovel | null>(null);
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
@@ -157,9 +161,24 @@ export default function PistasPage() {
     });
   }, [selectedCircuit, weatherData]);
 
+  useEffect(() => {
+    api
+      .get('/api/automoveis')
+      .then((res) => setFleet(Array.isArray(res.data) ? res.data : []))
+      .catch(() => setFleet([]));
+  }, []);
+
+  const circuitCars = useMemo(() => {
+    return fleet.filter(
+      (car) =>
+        car.circuito?.id === selectedCircuit.id ||
+        car.circuitosDisponiveis?.some((c) => c.id === selectedCircuit.id)
+    );
+  }, [fleet, selectedCircuit.id]);
+
   const activeWeather = weatherData[selectedCircuit.id] || null;
 
-  const handleOpenBooking = (car?: TrackCar) => {
+  const handleOpenBooking = (car?: Automovel) => {
     setSelectedCarForBooking(car || null);
     setIsBookingOpen(true);
   };
@@ -287,53 +306,63 @@ export default function PistasPage() {
             )}
           </div>
 
-          {/* Linha 5: Supercarros Disponíveis no Box (Estética Clean e Refinada) */}
-          <div className="mb-2 max-w-xl shrink-0">
-            <div className="flex items-center justify-between mb-1.5">
+          {/* Linha 5: Supercarros no Box (Fonte ?nica da API + Est?tica Transparente Clean sem Cards Blocados) */}
+          <div className="mb-3 max-w-xl shrink-0">
+            <div className="flex items-center justify-between mb-2">
               <span className="text-[10px] font-mono text-white/50 uppercase tracking-widest">
-                Supercarros disponíveis no box deste circuito
+                Supercarros homologados no box deste circuito
               </span>
               <button
                 type="button"
                 onClick={() => handleOpenBooking()}
-                className="text-[10px] font-mono text-white/40 hover:text-white transition-colors cursor-pointer"
+                className="text-[10px] font-mono text-white/45 hover:text-white transition-colors cursor-pointer"
               >
-                {selectedCircuit.availableCars.length} modelos prontos
+                {circuitCars.length} modelos dispon?veis
               </button>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-              {selectedCircuit.availableCars.map((car) => (
-                <div
-                  key={car.id}
-                  onClick={() => handleOpenBooking(car)}
-                  className="group p-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.08] hover:border-white/25 backdrop-blur-md transition-all duration-300 cursor-pointer flex flex-col justify-between shadow-sm"
-                  title={`Reservar ${car.brand} ${car.model}`}
-                >
-                  <div className="aspect-[16/10] w-full rounded-lg bg-gradient-to-b from-white/[0.04] to-black/50 mb-1.5 overflow-hidden flex items-center justify-center p-1.5">
-                    <img
-                      src={car.image}
-                      alt={car.model}
-                      loading="lazy"
-                      className="w-full h-full object-contain drop-shadow-[0_6px_12px_rgba(0,0,0,0.85)] group-hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
+            {circuitCars.length > 0 ? (
+              <div className="grid grid-cols-3 gap-3 sm:gap-5 items-end">
+                {circuitCars.map((car) => {
+                  const specs = getCarDisplaySpecs(car);
+                  return (
+                    <button
+                      key={car.id}
+                      type="button"
+                      onClick={() => handleOpenBooking(car)}
+                      className="group relative text-left cursor-pointer focus:outline-none pt-1 pb-2"
+                      title={`Agendar sess?o com ${car.marca} ${car.modelo}`}
+                    >
+                      <div className="relative h-16 sm:h-20 w-full flex items-center justify-center mb-1.5">
+                        <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-[78%] h-3 rounded-full bg-black/85 blur-md group-hover:bg-[#FF1717]/25 transition-colors duration-300 pointer-events-none" />
+                        <img
+                          src={resolveStudioCarImage(car)}
+                          alt={`${car.marca} ${car.modelo}`}
+                          loading="lazy"
+                          className="relative z-10 w-full h-full object-contain drop-shadow-[0_10px_14px_rgba(0,0,0,0.92)] group-hover:-translate-y-1 group-hover:scale-[1.06] transition-all duration-300"
+                        />
+                      </div>
 
-                  <div>
-                    <p className="text-[11px] font-medium text-white group-hover:text-white transition-colors truncate">
-                      {car.brand} {car.model}
-                    </p>
-                    <div className="flex items-center justify-between mt-0.5 text-[10px] text-white/50 font-mono">
-                      <span>{car.power}</span>
-                      <span>0-100: {car.acceleration}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                      <div className="h-[1px] w-full bg-white/10 group-hover:bg-[#FF1717] transition-colors mb-1.5" />
+
+                      <p className="text-[11px] font-medium text-white/90 group-hover:text-white transition-colors truncate">
+                        {car.modelo}
+                      </p>
+                      <p className="text-[10px] text-white/45 font-mono truncate">
+                        {specs.power} ? {specs.accel}
+                      </p>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-xs font-mono text-white/40 py-4">
+                Conecte o backend para carregar os carros deste box...
+              </p>
+            )}
           </div>
 
-          {/* Linha 6: Botão de Disponibilidade (Compacto com Ícone CalendarCheck e Alinhado à Direita) */}
+{/* Linha 6: Botão de Disponibilidade (Compacto com Ícone CalendarCheck e Alinhado à Direita) */}
           <div className="flex justify-end mb-2 max-w-xl shrink-0">
             <button
               type="button"
@@ -470,6 +499,7 @@ export default function PistasPage() {
           ========================================================================= */}
       <CircuitBookingModal
         circuit={selectedCircuit}
+        availableCars={circuitCars}
         initialCar={selectedCarForBooking}
         isOpen={isBookingOpen}
         onClose={() => {

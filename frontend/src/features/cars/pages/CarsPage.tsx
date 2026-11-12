@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { Loader2, CarFront } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { Loader2, ChevronDown, Check } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/services/api';
 import { CarsFilter } from '../components/CarsFilter';
 import { CarCard } from '../components/CarCard';
@@ -12,7 +12,7 @@ import { CountryFlag } from '@/components/ui/CountryFlag';
 import { getCarDisplaySpecs } from '@/lib/carPresentation';
 
 const BRAND_FILTERS = [
-  { id: 'all', label: 'Todas as marcas' },
+  { id: 'all', label: 'Todas' },
   { id: 'porsche', label: 'Porsche' },
   { id: 'bmw', label: 'BMW' },
   { id: 'mercedes', label: 'Mercedes-AMG' },
@@ -30,25 +30,35 @@ const CIRCUIT_COUNTRY_CODES: Record<string, string> = {
   suzuka: 'JP',
 };
 
+const shortCircuitName = (name: string) =>
+  name
+    .replace('Circuit de la Sarthe ', '')
+    .replace('Circuit de ', '')
+    .replace('Autodromo Nazionale ', '')
+    .replace('Autódromo de ', '')
+    .replace(' International Racing Course', '')
+    .replace(' Circuit', '');
+
 export default function CarsPage() {
   const [carros, setCarros] = useState<Automovel[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCar, setSelectedCar] = useState<Automovel | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [filterDates, setFilterDates] = useState({ start: '', end: '' });
+
+  const [selectedDate, setSelectedDate] = useState<string>('');
   const [activeBrandFilter, setActiveBrandFilter] = useState<string>('all');
   const [activeCircuitFilter, setActiveCircuitFilter] = useState<string>('all');
+  const [circuitDropdownOpen, setCircuitDropdownOpen] = useState(false);
+  const circuitMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem('rentcars_search_params');
-    if (saved) {
-      try {
-        const p = JSON.parse(saved);
-        setFilterDates({ start: p.pickupDate || '', end: p.returnDate || '' });
-      } catch {
-        // ignore invalid saved params
+    function handleOutside(e: MouseEvent) {
+      if (circuitMenuRef.current && !circuitMenuRef.current.contains(e.target as Node)) {
+        setCircuitDropdownOpen(false);
       }
     }
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
   }, []);
 
   useEffect(() => {
@@ -56,8 +66,8 @@ export default function CarsPage() {
       setIsLoading(true);
       try {
         let url = '/api/automoveis';
-        if (filterDates.start && filterDates.end) {
-          url += `?inicio=${filterDates.start}T00:00:00&fim=${filterDates.end}T23:59:59`;
+        if (selectedDate) {
+          url += `?inicio=${selectedDate}T08:00:00&fim=${selectedDate}T22:00:00`;
         }
         const response = await api.get(url);
         setCarros(Array.isArray(response.data) ? response.data : []);
@@ -69,7 +79,7 @@ export default function CarsPage() {
       }
     };
     fetchCars();
-  }, [filterDates.start, filterDates.end]);
+  }, [selectedDate]);
 
   const handleOpenBooking = (car: Automovel) => {
     setSelectedCar(car);
@@ -84,6 +94,9 @@ export default function CarsPage() {
       }
 
       if (activeCircuitFilter !== 'all') {
+        if (car.circuitosDisponiveis && car.circuitosDisponiveis.length > 0) {
+          return car.circuitosDisponiveis.some((c) => c.id === activeCircuitFilter);
+        }
         if (car.circuito?.id) {
           return car.circuito.id === activeCircuitFilter;
         }
@@ -98,11 +111,15 @@ export default function CarsPage() {
     });
   }, [carros, activeBrandFilter, activeCircuitFilter]);
 
+  const activeCircuitObj = CIRCUITS.find((c) => c.id === activeCircuitFilter);
+  const hasAnyFilter =
+    activeBrandFilter !== 'all' || activeCircuitFilter !== 'all' || selectedDate !== '';
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#08090C]">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="animate-spin text-[#FF1717]" size={34} />
+          <Loader2 className="animate-spin text-[#FF1717]" size={30} />
           <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/50">
             Carregando frota...
           </span>
@@ -113,120 +130,193 @@ export default function CarsPage() {
 
   return (
     <div className="min-h-screen bg-[#08090C] text-white pt-28 pb-28 selection:bg-[#FF1717] selection:text-white">
-      <div className="max-w-7xl mx-auto px-6 lg:px-8">
-        {/* Filtro de Datas */}
-        <CarsFilter
-          start={filterDates.start}
-          end={filterDates.end}
-          onDateChange={(start, end) => setFilterDates({ start, end })}
-          onClear={() => {
-            setFilterDates({ start: '', end: '' });
-            localStorage.removeItem('rentcars_search_params');
-          }}
-        />
-
+      <div className="max-w-6xl mx-auto px-6">
         {/* Cabeçalho Editorial Limpo */}
-        <header className="mb-12">
-          <p className="text-[11px] font-mono font-medium uppercase tracking-[0.22em] text-white/45 mb-2.5">
-            Frota Homologada · {carros.length} Veículos
-          </p>
-
-          <h1 className="text-3xl sm:text-5xl font-medium font-sans tracking-tight text-white leading-[1.08]">
-            Frota de Pista
-          </h1>
-          <p className="text-white/60 mt-3 text-sm sm:text-base font-normal max-w-2xl">
-            Todos os superesportivos disponíveis nos boxes oficiais da plataforma, prontos para reserva ou inspeção completa de ficha técnica.
-          </p>
-
-          {/* Filtro por Montadora */}
-          <div className="flex flex-wrap gap-2 pt-6">
-            {BRAND_FILTERS.map((brand) => {
-              const isActive = activeBrandFilter === brand.id;
-              return (
-                <button
-                  key={brand.id}
-                  type="button"
-                  onClick={() => setActiveBrandFilter(brand.id)}
-                  className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer border ${
-                    isActive
-                      ? 'bg-white text-[#08090C] border-white'
-                      : 'bg-white/[0.03] text-white/65 hover:text-white border-white/10 hover:border-white/25'
-                  }`}
-                >
-                  {brand.label}
-                </button>
-              );
-            })}
+        <header className="mb-10">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div>
+              <p className="text-[11px] font-mono font-medium uppercase tracking-[0.22em] text-white/45 mb-2.5">
+                Frota Homologada · {carros.length} Supercarros
+              </p>
+              <h1 className="text-3xl sm:text-5xl font-medium font-sans tracking-tight text-white leading-[1.08]">
+                Frota de Pista
+              </h1>
+            </div>
+            <p className="text-white/55 text-xs sm:text-sm font-normal max-w-md leading-relaxed">
+              Combustível 102 octanas, pneus Cup 2 R e telemetria VBOX inclusos por bateria.
+              Operação reduzida de terça a quinta e grade completa com sessão noturna de sexta a domingo.
+            </p>
           </div>
 
-          {/* Filtro por Circuito */}
-          <div className="flex flex-wrap gap-2 pt-3">
-            <button
-              type="button"
-              onClick={() => setActiveCircuitFilter('all')}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer border ${
-                activeCircuitFilter === 'all'
-                  ? 'bg-[#FF1717] text-white border-[#FF1717] shadow-md shadow-[#FF1717]/25'
-                  : 'bg-white/[0.02] text-white/55 hover:text-white border-white/[0.08] hover:border-white/20'
-              }`}
-            >
-              Todos os circuitos
-            </button>
-            {CIRCUITS.map((c) => {
-              const isActive = activeCircuitFilter === c.id;
-              return (
+          {/* Barra Arquitetônica Única de Filtros (sem bloquinhos espalhados) */}
+          <div className="mt-10 border-y border-white/10 py-3.5 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+            {/* Montadoras: Abas sublinhadas */}
+            <nav aria-label="Filtrar por montadora" className="flex items-center gap-6 overflow-x-auto pb-1 lg:pb-0">
+              {BRAND_FILTERS.map((brand) => {
+                const isActive = activeBrandFilter === brand.id;
+                return (
+                  <button
+                    key={brand.id}
+                    type="button"
+                    onClick={() => setActiveBrandFilter(brand.id)}
+                    className={`relative pb-1.5 text-xs sm:text-sm font-medium whitespace-nowrap transition-colors cursor-pointer ${
+                      isActive ? 'text-white' : 'text-white/45 hover:text-white/80'
+                    }`}
+                  >
+                    <span>{brand.label}</span>
+                    {isActive && (
+                      <motion.span
+                        layoutId="carsBrandUnderline"
+                        transition={{ type: 'spring', stiffness: 360, damping: 30 }}
+                        className="absolute left-0 right-0 -bottom-0.5 h-[2px] bg-[#FF1717]"
+                      />
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
+
+            {/* Direita: Seletor de Autódromo (Dropdown Único) + Data da Sessão */}
+            <div className="flex flex-wrap items-center gap-6">
+              {/* Seletor Único de Circuito */}
+              <div className="relative" ref={circuitMenuRef}>
                 <button
-                  key={c.id}
                   type="button"
-                  onClick={() => setActiveCircuitFilter(c.id)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all flex items-center gap-2 cursor-pointer border ${
-                    isActive
-                      ? 'bg-[#FF1717] text-white border-[#FF1717] shadow-md shadow-[#FF1717]/25'
-                      : 'bg-white/[0.02] text-white/55 hover:text-white border-white/[0.08] hover:border-white/20'
+                  onClick={() => setCircuitDropdownOpen((prev) => !prev)}
+                  className={`flex items-center gap-2 pb-1.5 border-b text-xs font-medium transition-colors cursor-pointer ${
+                    activeCircuitFilter !== 'all'
+                      ? 'border-[#FF1717] text-white'
+                      : 'border-white/15 hover:border-white/40 text-white/75 hover:text-white'
                   }`}
                 >
-                  <CountryFlag
-                    countryCode={CIRCUIT_COUNTRY_CODES[c.id] || 'DE'}
-                    className="w-4 h-3 rounded-[2px] shrink-0"
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-white/40">
+                    Autódromo:
+                  </span>
+                  {activeCircuitObj ? (
+                    <span className="flex items-center gap-1.5">
+                      <CountryFlag
+                        countryCode={CIRCUIT_COUNTRY_CODES[activeCircuitObj.id] || 'DE'}
+                        className="w-3.5 h-2.5 rounded-[1px] shrink-0"
+                      />
+                      <span>{shortCircuitName(activeCircuitObj.name)}</span>
+                    </span>
+                  ) : (
+                    <span>Todos os 8 boxes</span>
+                  )}
+                  <ChevronDown
+                    size={13}
+                    className={`text-white/45 transition-transform ${
+                      circuitDropdownOpen ? 'rotate-180' : ''
+                    }`}
                   />
-                  <span>{c.name.replace('Circuit de ', '').replace('Autodromo Nazionale ', '').replace('Autódromo de ', '').replace(' International Racing Course', '').replace(' Circuit', '')}</span>
                 </button>
-              );
-            })}
+
+                <AnimatePresence>
+                  {circuitDropdownOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 6 }}
+                      transition={{ duration: 0.14 }}
+                      className="absolute right-0 top-full mt-3 z-50 w-72 bg-[#0B0E14] border border-white/15 rounded-xl py-1.5 shadow-2xl"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveCircuitFilter('all');
+                          setCircuitDropdownOpen(false);
+                        }}
+                        className={`w-full px-4 py-2.5 text-left text-xs flex items-center justify-between hover:bg-white/[0.04] transition-colors cursor-pointer ${
+                          activeCircuitFilter === 'all' ? 'text-white font-semibold' : 'text-white/65'
+                        }`}
+                      >
+                        <span>Todos os circuitos (8 boxes)</span>
+                        {activeCircuitFilter === 'all' && <Check size={13} className="text-[#FF1717]" />}
+                      </button>
+
+                      <div className="my-1 border-t border-white/10" />
+
+                      {CIRCUITS.map((c) => {
+                        const selected = activeCircuitFilter === c.id;
+                        return (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => {
+                              setActiveCircuitFilter(c.id);
+                              setCircuitDropdownOpen(false);
+                            }}
+                            className={`w-full px-4 py-2 text-left text-xs flex items-center justify-between hover:bg-white/[0.04] transition-colors cursor-pointer ${
+                              selected ? 'text-white font-semibold bg-white/[0.03]' : 'text-white/70'
+                            }`}
+                          >
+                            <span className="flex items-center gap-2.5 truncate">
+                              <CountryFlag
+                                countryCode={CIRCUIT_COUNTRY_CODES[c.id] || 'DE'}
+                                className="w-4 h-3 rounded-[2px] shrink-0"
+                              />
+                              <span className="truncate">{shortCircuitName(c.name)}</span>
+                            </span>
+                            <span className="text-[10px] font-mono text-white/40 ml-2 shrink-0">
+                              {c.lengthKm}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Seletor de Data Única (com regra de manutenção nas segundas) */}
+              <CarsFilter
+                selectedDate={selectedDate}
+                onDateChange={setSelectedDate}
+                onClear={() => setSelectedDate('')}
+              />
+
+              {hasAnyFilter && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveBrandFilter('all');
+                    setActiveCircuitFilter('all');
+                    setSelectedDate('');
+                  }}
+                  className="text-[11px] font-mono uppercase tracking-wider text-[#FF1717] hover:text-white transition-colors cursor-pointer"
+                >
+                  Limpar
+                </button>
+              )}
+            </div>
           </div>
         </header>
 
-        {/* Grid de Carros ou Empty State */}
+        {/* Grid Editorial 2 Colunas (Padrão FleetCompareSection) */}
         {filteredCars.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col items-center justify-center py-20 text-center bg-white/[0.02] rounded-2xl border border-white/[0.08]"
-          >
-            <div className="w-16 h-16 bg-white/[0.04] rounded-2xl flex items-center justify-center mb-5 text-[#FF1717] border border-white/10">
-              <CarFront size={28} />
+          <div className="py-20 border-b border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+            <div>
+              <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#FF1717] mb-1.5">
+                Sem resultados no box
+              </p>
+              <h3 className="text-xl font-medium text-white">
+                Nenhum supercarro disponível para essa combinação de filtros.
+              </h3>
             </div>
-            <h3 className="text-xl font-medium text-white mb-2">
-              Nenhum veículo encontrado
-            </h3>
-            <p className="text-white/55 text-sm max-w-md mx-auto mb-7">
-              Ajuste o filtro de montadora, circuito ou período para visualizar outros carros disponíveis.
-            </p>
             <button
               type="button"
               onClick={() => {
-                setFilterDates({ start: '', end: '' });
+                setSelectedDate('');
                 setActiveBrandFilter('all');
                 setActiveCircuitFilter('all');
-                localStorage.removeItem('rentcars_search_params');
               }}
-              className="bg-[#FF1717] text-white px-6 py-2.5 rounded-full text-xs font-medium hover:bg-[#e01414] transition-all cursor-pointer"
+              className="border border-white/20 hover:border-[#FF1717] text-white px-6 py-2.5 rounded-full text-xs font-medium transition-colors cursor-pointer shrink-0"
             >
               Redefinir filtros
             </button>
-          </motion.div>
+          </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 lg:gap-x-16 gap-y-16">
             {filteredCars.map((carro, index) => (
               <CarCard
                 key={carro.id}

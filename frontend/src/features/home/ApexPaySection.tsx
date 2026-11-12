@@ -2,7 +2,9 @@
 
 import { useRef, useState } from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
-import { ShieldCheck, Percent, Wallet } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ShieldCheck, Percent, Wallet, ArrowRight } from 'lucide-react';
+import { useAuthStore } from '@/store/useAuthStore';
 
 interface TierOption {
   id: string;
@@ -90,6 +92,8 @@ const BANK_FEATURES = [
 ];
 
 export function ApexPaySection() {
+  const navigate = useNavigate();
+  const { user, token } = useAuthStore();
   const [selectedTierIdx, setSelectedTierIdx] = useState(3); // Apex Black em destaque inicial
   const cardWrapperRef = useRef<HTMLDivElement>(null);
 
@@ -345,6 +349,23 @@ export function ApexPaySection() {
                   <p className="text-[10px] text-white/40 tabular-nums">{tier.threshold}</p>
                 </button>
               ))}
+            </div>
+
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!token || !user) {
+                    navigate('/login', { state: { from: '/apexpay' } });
+                    return;
+                  }
+                  navigate(user.role === 'ADMIN' ? '/admin' : '/apexpay');
+                }}
+                className="inline-flex items-center gap-2 bg-[#FF1717] hover:bg-[#e01414] text-white text-xs sm:text-sm font-medium px-7 py-3 rounded-full transition-all shadow-lg shadow-[#FF1717]/25 cursor-pointer"
+              >
+                <span>{user?.role === 'ADMIN' ? 'Abrir Painel Financeiro Admin' : 'Acessar Minha Carteira ApexPay'}</span>
+                <ArrowRight size={15} />
+              </button>
             </div>
           </div>
         </div>

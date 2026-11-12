@@ -13,100 +13,124 @@ interface CarCardProps {
   onSelect: (car: Automovel) => void;
 }
 
+const formatShortCircuitName = (name: string) =>
+  name
+    .replace('Circuit de la Sarthe ', '')
+    .replace('Circuit de ', '')
+    .replace('Autodromo Nazionale ', '')
+    .replace('Autódromo de ', '')
+    .replace(' International Racing Course', '')
+    .replace(' Nordschleife', '')
+    .replace(' Circuit', '')
+    .replace(/[()]/g, '')
+    .trim();
+
 export function CarCard({ carro, index, onSelect }: CarCardProps) {
   const { formatPrice } = useCurrencyStore();
   const specs = getCarDisplaySpecs(carro);
   const imageSrc = resolveStudioCarImage(carro);
 
+  const circuitosList =
+    carro.circuitosDisponiveis && carro.circuitosDisponiveis.length > 0
+      ? carro.circuitosDisponiveis.map((c) => formatShortCircuitName(c.nome))
+      : [specs.circuit];
+
   return (
     <motion.article
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 14 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: Math.min(index * 0.04, 0.25), duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-      className="group bg-white/[0.02] hover:bg-white/[0.04] rounded-2xl overflow-hidden border border-white/[0.08] hover:border-white/20 transition-all duration-300 flex flex-col"
+      transition={{ delay: Math.min(index * 0.04, 0.24), duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      className="group flex flex-col"
     >
-      {/* Palco Studio sem fundo */}
+      {/* Topo editorial sem borda de card */}
+      <div className="flex items-baseline justify-between gap-3 mb-2">
+        <Link
+          to={`/cars/${carro.id}`}
+          className="text-xl sm:text-2xl font-medium tracking-tight text-white hover:text-[#FF1717] transition-colors"
+        >
+          {carro.marca} {carro.modelo}
+        </Link>
+        <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/45 shrink-0">
+          {specs.category} · {carro.ano}
+        </span>
+      </div>
+
+      {/* Palco Studio Livre sem caixa fechada */}
       <Link
         to={`/cars/${carro.id}`}
-        className="aspect-[16/9] relative overflow-hidden bg-gradient-to-b from-[#0E1118] to-[#08090C] flex items-center justify-center p-6 border-b border-white/[0.06]"
+        className="relative h-56 sm:h-64 w-full flex items-center justify-center my-4 cursor-pointer"
         aria-label={`Ver detalhes de ${carro.marca} ${carro.modelo}`}
       >
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 w-[70%] h-6 rounded-full bg-black/80 blur-xl pointer-events-none" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(255,255,255,0.05)_0%,transparent_70%)] pointer-events-none" />
-
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 w-[78%] h-8 rounded-full bg-black/85 blur-xl group-hover:bg-[#FF1717]/15 transition-colors duration-500 pointer-events-none" />
+        <div className="absolute inset-x-10 top-6 bottom-6 rounded-full bg-[radial-gradient(ellipse,rgba(255,255,255,0.05)_0%,transparent_72%)] pointer-events-none" />
         <img
           src={imageSrc}
           alt={`${carro.marca} ${carro.modelo}`}
           loading="lazy"
-          className="relative z-10 w-full h-full object-contain drop-shadow-[0_16px_24px_rgba(0,0,0,0.85)] group-hover:scale-[1.04] transition-transform duration-500"
+          className="relative z-10 w-full h-full object-contain drop-shadow-[0_18px_28px_rgba(0,0,0,0.88)] group-hover:-translate-y-1 group-hover:scale-[1.03] transition-all duration-500"
         />
-
-        <div className="absolute top-4 left-4 right-4 z-20 flex items-center justify-between">
-          <span className="text-[10px] font-mono uppercase tracking-widest text-white/70 bg-[#08090C]/75 border border-white/10 backdrop-blur-md px-2.5 py-1 rounded-full">
-            {specs.circuit}
-          </span>
-          <span className="text-[10px] font-mono uppercase tracking-widest text-white/50 bg-[#08090C]/75 border border-white/10 backdrop-blur-md px-2.5 py-1 rounded-full">
-            {specs.category} · {carro.ano}
-          </span>
-        </div>
       </Link>
 
-      {/* Conteúdo */}
-      <div className="p-6 flex-1 flex flex-col justify-between">
-        <div>
-          <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/45 mb-1">
-            {carro.marca}
-          </p>
-
-          <Link
-            to={`/cars/${carro.id}`}
-            className="text-xl font-medium text-white hover:text-[#FF1717] transition-colors tracking-tight block mb-5"
-          >
-            {carro.modelo}
-          </Link>
-
-          {/* 3 Métricas alinhadas */}
-          <div className="grid grid-cols-3 gap-3 py-3.5 border-y border-white/[0.08] mb-5">
-            <div>
-              <p className="text-[10px] text-white/45 mb-0.5">Potência</p>
-              <p className="text-sm font-medium text-white tabular-nums">{specs.power}</p>
-            </div>
-            <div className="border-x border-white/[0.08] px-3">
-              <p className="text-[10px] text-white/45 mb-0.5">0–100 km/h</p>
-              <p className="text-sm font-medium text-white tabular-nums">{specs.accel}</p>
-            </div>
-            <div className="pl-1">
-              <p className="text-[10px] text-white/45 mb-0.5">Vel. Máx.</p>
-              <p className="text-sm font-medium text-white tabular-nums">{specs.topSpeed}</p>
-            </div>
+      {/* Grade de Especificações com Linhas Ultrafinas (Padrão FleetCompareSection) */}
+      <div>
+        <div className="grid grid-cols-3 gap-4 pb-4 border-b border-white/10">
+          <div>
+            <p className="text-[11px] font-medium text-white/45 mb-1">Categoria</p>
+            <p className="text-xs sm:text-sm text-white/90 truncate">{specs.category} Track</p>
+          </div>
+          <div>
+            <p className="text-[11px] font-medium text-white/45 mb-1">Potência</p>
+            <p className="text-xs sm:text-sm text-white/90 tabular-nums">{specs.power}</p>
+          </div>
+          <div>
+            <p className="text-[11px] font-medium text-white/45 mb-1">Homologação</p>
+            <p className="text-xs sm:text-sm text-white/90 truncate">
+              {circuitosList.length > 1 ? `${circuitosList.length} circuitos` : circuitosList[0]}
+            </p>
           </div>
         </div>
 
-        {/* Rodapé */}
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[10px] text-white/45 mb-0.5">Sessão / Diária</p>
-            <p className="text-lg font-medium text-white tabular-nums">
-              {formatPrice(carro.precoPorDia)}
-            </p>
+        <div className="grid grid-cols-3 gap-4 py-4 border-b border-white/10 items-baseline">
+          <div className="text-lg sm:text-xl font-medium tracking-tight text-white tabular-nums">
+            {specs.topSpeed.replace(/ km\/h/i, '')}
+            <span className="text-[11px] text-white/45 font-normal ml-1">km/h</span>
           </div>
+          <div className="text-lg sm:text-xl font-medium tracking-tight text-white tabular-nums">
+            {specs.accel.replace(/s$/i, '')}
+            <span className="text-[11px] text-white/45 font-normal ml-1">s (0–100)</span>
+          </div>
+          <div className="text-lg sm:text-xl font-medium tracking-tight text-white tabular-nums">
+            {formatPrice(carro.precoPorDia)}
+            <span className="text-[11px] text-white/45 font-normal ml-1">/sessão</span>
+          </div>
+        </div>
 
-          <div className="flex items-center gap-2">
-            <Link
-              to={`/cars/${carro.id}`}
-              className="px-4 py-2 rounded-full border border-white/15 bg-white/[0.03] hover:bg-white/[0.08] hover:border-white/30 text-xs font-medium text-white/85 hover:text-white transition-all flex items-center gap-1"
-            >
-              <span>Detalhes</span>
-              <ArrowUpRight size={13} />
-            </Link>
-            <button
-              type="button"
-              onClick={() => onSelect(carro)}
-              className="px-5 py-2 rounded-full bg-[#F3F4F6] text-[#08090C] hover:bg-[#FF1717] hover:text-white text-xs font-medium transition-all cursor-pointer active:scale-[0.98]"
-            >
-              Reservar
-            </button>
-          </div>
+        <div className="py-3.5 border-b border-white/10 flex items-center justify-between gap-4 text-xs">
+          <span className="text-white/45 font-mono uppercase tracking-wider text-[10px] shrink-0">
+            Boxes disponíveis
+          </span>
+          <span className="text-white/75 truncate text-right">
+            {circuitosList.join(' · ')}
+          </span>
+        </div>
+
+        {/* Ações limpas */}
+        <div className="pt-5 flex items-center justify-between gap-3">
+          <Link
+            to={`/cars/${carro.id}`}
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-white/65 hover:text-white transition-colors"
+          >
+            <span>Ficha técnica</span>
+            <ArrowUpRight size={14} />
+          </Link>
+
+          <button
+            type="button"
+            onClick={() => onSelect(carro)}
+            className="bg-[#F3F4F6] text-[#08090C] hover:bg-[#FF1717] hover:text-white text-xs font-medium px-6 py-2.5 rounded-full transition-all duration-200 cursor-pointer active:scale-[0.98]"
+          >
+            Reservar Sessão
+          </button>
         </div>
       </div>
     </motion.article>

@@ -7,6 +7,7 @@ import io.micronaut.http.annotation.*;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.rules.SecurityRule;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
 @Controller("/api/admin")
@@ -20,27 +21,44 @@ public class AdminDashboardController {
         this.queueEngine = queueEngine;
     }
 
-    /**
-     * Dashboard Executivo Completo para Diretores de Prova, Admins e Agentes Financeiros.
-     */
     @Get("/dashboard")
     @Secured({"ROLE_ADMIN", "ROLE_EMPRESA", "ROLE_BANCO"})
     public HttpResponse<?> getDashboard() {
         return HttpResponse.ok(facade.getMetricasDashboard());
     }
 
-    /**
-     * Demonstração Pública do Dashboard (Permite a recrutadores inspecionarem os KPIs em tempo real).
-     */
     @Get("/dashboard/publico")
     @Secured(SecurityRule.IS_ANONYMOUS)
     public HttpResponse<?> getDashboardPublico() {
         return HttpResponse.ok(facade.getMetricasDashboard());
     }
 
-    /**
-     * Inspeção direta dos itens na Dead Letter Queue (DLQ).
-     */
+    @Post("/clientes/{id}/aplicar-juros")
+    @Secured({"ROLE_ADMIN", "ROLE_BANCO"})
+    public HttpResponse<?> aplicarJurosCliente(@PathVariable Long id) {
+        try {
+            return HttpResponse.ok(facade.aplicarJurosCliente(id));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return HttpResponse.badRequest(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @Post("/pedidos/{id}/sinistro")
+    @Secured({"ROLE_ADMIN", "ROLE_EMPRESA", "ROLE_BANCO"})
+    public HttpResponse<?> registrarSinistro(@PathVariable Long id, @Body Map<String, Object> payload) {
+        try {
+            Object valorObj = payload.get("valor");
+            if (valorObj == null) {
+                return HttpResponse.badRequest(Map.of("message", "Campo 'valor' é obrigatório."));
+            }
+            BigDecimal valor = new BigDecimal(valorObj.toString());
+            String motivo = payload.get("motivo") != null ? payload.get("motivo").toString() : null;
+            return HttpResponse.ok(facade.registrarSinistro(id, valor, motivo));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return HttpResponse.badRequest(Map.of("message", e.getMessage()));
+        }
+    }
+
     @Get("/queue/dlq")
     @Secured({"ROLE_ADMIN", "ROLE_BANCO"})
     public HttpResponse<?> getDeadLetterQueue() {

@@ -3,6 +3,8 @@ package com.aluguel.models;
 import io.micronaut.serde.annotation.Serdeable;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Serdeable
 @Entity
@@ -43,6 +45,14 @@ public class Automovel {
     @JoinColumn(name = "circuito_id")
     private Circuito circuito;
 
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "automovel_circuitos",
+        joinColumns = @JoinColumn(name = "automovel_id"),
+        inverseJoinColumns = @JoinColumn(name = "circuito_id")
+    )
+    private Set<Circuito> circuitosDisponiveis = new LinkedHashSet<>();
+
     @Column
     private Integer potenciaCv;
 
@@ -82,6 +92,16 @@ public class Automovel {
 
     public Circuito getCircuito() { return circuito; }
     public void setCircuito(Circuito circuito) { this.circuito = circuito; }
+    public Set<Circuito> getCircuitosDisponiveis() { return circuitosDisponiveis; }
+    public void setCircuitosDisponiveis(Set<Circuito> circuitosDisponiveis) { this.circuitosDisponiveis = circuitosDisponiveis; }
+    public void adicionarCircuito(Circuito c) {
+        if (c != null) {
+            if (this.circuito == null) {
+                this.circuito = c;
+            }
+            this.circuitosDisponiveis.add(c);
+        }
+    }
     public Integer getPotenciaCv() { return potenciaCv; }
     public void setPotenciaCv(Integer potenciaCv) { this.potenciaCv = potenciaCv; }
     public String getAceleracao0a100() { return aceleracao0a100; }

@@ -148,8 +148,8 @@ class UsuarioFacadeTest {
     }
 
     @Test
-    @DisplayName("Deve registrar agente (Empresa/Banco) com CNPJ com sucesso")
-    void deveRegistrarAgenteComSucesso() {
+    @DisplayName("Deve rejeitar tentativa pública de cadastro de EMPRESA ou BANCO")
+    void deveRejeitarCadastroCorporativoPublico() {
         Map<String, Object> data = new HashMap<>();
         data.put("role", "EMPRESA");
         data.put("nome", "Locadora Alpha");
@@ -157,16 +157,9 @@ class UsuarioFacadeTest {
         data.put("password", "senha123");
         data.put("cnpj", "12.345.678/0001-90");
 
-        when(usuarioRepository.findByEmail("contato@alpha.com")).thenReturn(Optional.empty());
-        when(agenteRepository.findByCnpj("12.345.678/0001-90")).thenReturn(Optional.empty());
-        when(agenteRepository.save(any(Agente.class))).thenAnswer(invocation -> invocation.getArgument(0));
-
-        Usuario agente = usuarioFacade.registrar(data);
-
-        assertNotNull(agente);
-        assertTrue(agente instanceof Agente);
-        assertEquals("Locadora Alpha", agente.getNome());
-        assertEquals("ROLE_EMPRESA", agente.getRole());
-        assertEquals("12.345.678/0001-90", ((Agente) agente).getCnpj());
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+            usuarioFacade.registrar(data)
+        );
+        assertTrue(ex.getMessage().contains("exclusivo para Pilotos/Clientes"));
     }
 }

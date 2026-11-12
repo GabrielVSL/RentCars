@@ -84,31 +84,33 @@ describe('authSchema - registerSchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it('deve aprovar registro de EMPRESA com CNPJ válido', () => {
-    const validEmpresa = {
+  it('deve reprovar tentativa de registro com perfil diferente de CLIENTE', () => {
+    const empresaAttempt = {
       role: 'EMPRESA',
       nome: 'Locadora Premium Ltda',
       email: 'contato@locadorapremium.com',
       password: 'senhaForte123',
       confirmPassword: 'senhaForte123',
       endereco: 'Av. Paulista, 1000',
-      cnpj: '12.345.678/0001-90',
+      cpf: '123.456.789-00',
+      rg: 'MG-12.345.678',
     };
-    const result = registerSchema.safeParse(validEmpresa);
-    expect(result.success).toBe(true);
+    const result = registerSchema.safeParse(empresaAttempt);
+    expect(result.success).toBe(false);
   });
 
-  it('deve reprovar registro de EMPRESA sem CNPJ válido', () => {
-    const invalidEmpresa = {
-      role: 'EMPRESA',
-      nome: 'Locadora Premium Ltda',
-      email: 'contato@locadorapremium.com',
+  it('deve reprovar registro sem RG válido', () => {
+    const missingRg = {
+      role: 'CLIENTE',
+      nome: 'Carlos Silva',
+      email: 'carlos@gmail.com',
       password: 'senhaForte123',
       confirmPassword: 'senhaForte123',
-      endereco: 'Av. Paulista, 1000',
-      cnpj: '123',
+      endereco: 'Rua Principal, 100',
+      cpf: '123.456.789-00',
+      rg: '12',
     };
-    const result = registerSchema.safeParse(invalidEmpresa);
+    const result = registerSchema.safeParse(missingRg);
     expect(result.success).toBe(false);
   });
 });

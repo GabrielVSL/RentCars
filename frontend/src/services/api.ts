@@ -1,6 +1,5 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/useAuthStore';
-import { useUIStore } from '../store/useUIStore';
 
 // Cria a instância base apontando para o seu Micronaut
 export const api = axios.create({
@@ -33,8 +32,10 @@ api.interceptors.response.use(
       // Limpa os dados do usuário do Zustand
       useAuthStore.getState().logout();
       
-      // Abre o modal de login para ele entrar de novo
-      useUIStore.getState().setAuthView('login');
+      // Redireciona para a página dedicada de login se ainda não estiver nela
+      if (typeof window !== 'undefined' && window.location.pathname !== '/login' && window.location.pathname !== '/cadastro') {
+        window.location.assign('/login');
+      }
       
 
     }

@@ -1,21 +1,18 @@
 import { ReactNode } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/store/useAuthStore';
-import { useUIStore } from '@/store/useUIStore';
 
 interface ProtectedRouteProps {
   children: ReactNode;
-  allowedRoles?: ('CLIENTE' | 'EMPRESA' | 'BANCO')[];
+  allowedRoles?: ('CLIENTE' | 'EMPRESA' | 'BANCO' | 'ADMIN')[];
 }
 
 export default function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   const { user, token } = useAuthStore();
-  const setAuthView = useUIStore((state) => state.setAuthView);
+  const location = useLocation();
 
   if (!token || !user) {
-    // Abre o modal de login automaticamente e redireciona para a Home
-    setTimeout(() => setAuthView('login'), 100);
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role as any)) {

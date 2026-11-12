@@ -6,6 +6,7 @@ import com.aluguel.models.Cliente;
 import com.aluguel.models.Pedido;
 import com.aluguel.repositories.AutomovelRepository;
 import com.aluguel.repositories.PedidoRepository;
+import com.aluguel.repositories.TrackSlotRepository;
 import com.aluguel.repositories.UsuarioRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -15,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -37,6 +39,14 @@ class PedidoFacadeTest {
     private UsuarioRepository usuarioRepository;
 
     private PedidoFacade pedidoFacade;
+
+    private LocalDateTime proximoDiaAberto(int minDias) {
+        LocalDate d = LocalDate.now().plusDays(minDias);
+        if (d.getDayOfWeek() == DayOfWeek.MONDAY) {
+            d = d.plusDays(1);
+        }
+        return d.atTime(10, 0);
+    }
 
     @BeforeEach
     void setUp() {
@@ -63,8 +73,9 @@ class PedidoFacadeTest {
 
         Pedido pedidoInput = new Pedido();
         pedidoInput.setAutomovel(automovel);
-        pedidoInput.setDataInicio(LocalDateTime.now().plusDays(1).withHour(10).withMinute(0));
-        pedidoInput.setDataFim(LocalDateTime.now().plusDays(4).withHour(10).withMinute(0)); // 3 diárias
+        LocalDateTime inicio = proximoDiaAberto(1);
+        pedidoInput.setDataInicio(inicio);
+        pedidoInput.setDataFim(inicio.plusDays(3)); // 3 diárias/sessões
 
         when(automovelRepository.findById(10L)).thenReturn(Optional.of(automovel));
         when(pedidoRepository.countAlugueisConflitantes(eq(10L), any(), any())).thenReturn(0L);
@@ -128,8 +139,9 @@ class PedidoFacadeTest {
 
         Pedido pedidoInput = new Pedido();
         pedidoInput.setAutomovel(automovel);
-        pedidoInput.setDataInicio(LocalDateTime.now().plusDays(2));
-        pedidoInput.setDataFim(LocalDateTime.now().plusDays(5));
+        LocalDateTime inicio = proximoDiaAberto(2);
+        pedidoInput.setDataInicio(inicio);
+        pedidoInput.setDataFim(inicio.plusDays(3));
 
         when(automovelRepository.findById(10L)).thenReturn(Optional.of(automovel));
         when(pedidoRepository.countAlugueisConflitantes(eq(10L), any(), any())).thenReturn(1L); // Conflito existente
@@ -286,4 +298,98 @@ class PedidoFacadeTest {
 
         assertEquals("CANCELADO", cancelado.getStatus());
     }
+
+    @Test
+    @DisplayName("Deve criar pedido VISITA_BOX sem automóvel com valor fixo de R$ 890,00")
+    void deveCriarVisitaBoxSemAutomovelEFixarValor() {
+        Cliente cliente = new Cliente();
+        cliente.setId(2L);
+        cliente.setEmail("visitante@apex.com");
+        cliente.setStatusFinanceiro("REGULAR");
+
+        Pedido visita = new Pedido();
+        visita.setTipoServico("VISITA_BOX");
+        visita.setAutomovel(null);
+        LocalDateTime inicioVisita = proximoDiaAberto(2).withHour(9);
+        visita.setDataInicio(inicioVisita);
+        visita.setDataFim(inicioVisita.withHour(12));
+
+        when(usuarioRepository.findByEmail("visitante@apex.com")).thenReturn(Optional.of(cliente));
+        when(pedidoRepository.save(any(Pedido.class))).thenAnswer(i -> i.getArgument(0));
+
+        Pedido criado = pedidoFacade.criarPedido(visita, "visitante@apex.com");
+
+        assertNotNull(criado);
+        assertNull(criado.getAutomovel());
+        assertEquals("VISITA_BOX", criado.getTipoServico());
+        assertEquals(new BigDecimal("890.00"), criado.getValorTotal());
+        assertEquals(new BigDecimal("890.00"), criado.getValorFinal());
+        assertEquals("PENDENTE_EMPRESA", criado.getStatus());
+        verify(pedidoRepository, never()).countAlugueisConflitantes(any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("Deve calcular FAST_LAP com multiplicador 0.55, desconto fidelidade e debitar via FATURA_APEXPAY")
+    void deveCalcularFastLapEDebitarFaturaApexPay() {
+        TrackSlotRepository slotRepo = mock(TrackSlotRepository.class);
+        ApexPayFacade apexMock = mock(ApexPayFacade.class);
+        PedidoFacade facadeComApex = new PedidoFacade(pedidoRepository, automovelRepository, usuarioRepository, slotRepo, apexMock);
+
+        Automovel carro = new Automovel();
+        carro.setId(77L);
+        carro.setPrecoPorDia(new BigDecimal("1000.00"));
+
+        Cliente vip = new Cliente();
+        vip.setId(3L);
+        vip.setEmail("black@apex.com");
+        vip.setSaldoCarteira(BigDecimal.ZERO);
+        vip.setTotalDepositadoHistorico(new BigDecimal("60000.00"));
+        vip.setStatusFinanceiro("REGULAR");
+
+        Pedido fastLap = new Pedido();
+        fastLap.setAutomovel(carro);
+        fastLap.setTipoServico("FAST_LAP");
+        fastLap.setFormaPagamento("FATURA_APEXPAY");
+        LocalDateTime inicioFast = proximoDiaAberto(1).withHour(14);
+        fastLap.setDataInicio(inicioFast);
+        fastLap.setDataFim(inicioFast.withHour(15));
+
+        when(automovelRepository.findById(77L)).thenReturn(Optional.of(carro));
+        when(pedidoRepository.countAlugueisConflitantes(eq(77L), any(), any())).thenReturn(0L);
+        when(usuarioRepository.findByEmail("black@apex.com")).thenReturn(Optional.of(vip));
+        when(pedidoRepository.save(any(Pedido.class))).thenAnswer(i -> i.getArgument(0));
+
+        Pedido criado = facadeComApex.criarPedido(fastLap, "black@apex.com");
+
+        assertEquals(new BigDecimal("550.00"), criado.getValorTotal());
+        assertEquals(new BigDecimal("82.50"), criado.getDescontoFidelidade());
+        assertEquals(new BigDecimal("467.50"), criado.getValorFinal());
+        verify(apexMock, times(1)).debitarValorLiquido(eq(vip), eq(new BigDecimal("467.50")), anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("Deve bloquear agendamento na segunda-feira por manutenção de pista FIA")
+    void deveRejeitarAgendamentoNaSegundaFeira() {
+        Automovel carro = new Automovel();
+        carro.setId(88L);
+
+        LocalDate proximaSegunda = LocalDate.now().plusDays(1);
+        while (proximaSegunda.getDayOfWeek() != DayOfWeek.MONDAY) {
+            proximaSegunda = proximaSegunda.plusDays(1);
+        }
+
+        Pedido segunda = new Pedido();
+        segunda.setAutomovel(carro);
+        segunda.setTipoServico("TRACK_EXPERIENCE");
+        segunda.setDataInicio(proximaSegunda.atTime(10, 0));
+        segunda.setDataFim(proximaSegunda.atTime(12, 0));
+
+        when(automovelRepository.findById(88L)).thenReturn(Optional.of(carro));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+            pedidoFacade.criarPedido(segunda, "cliente@apex.com")
+        );
+        assertTrue(ex.getMessage().toLowerCase().contains("manuten"));
+    }
+
 }

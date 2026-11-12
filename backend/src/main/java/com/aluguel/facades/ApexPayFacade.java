@@ -114,6 +114,49 @@ public class ApexPayFacade {
         return transacaoRepository.save(transacao);
     }
 
+    /**
+     * Registra cobrança de sinistro / franquia por avaria em pista diretamente na carteira do piloto.
+     */
+    @Transactional
+    public TransacaoApexPay lancarCobrancaSinistro(String email, BigDecimal valor, String trackingCode, String motivo) {
+        if (valor == null || valor.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("O valor da franquia de sinistro deve ser maior que zero.");
+        }
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado: " + email));
+
+        usuario.debitarSaldo(valor);
+        usuarioRepository.update(usuario);
+
+        String desc = (motivo != null && !motivo.isBlank())
+                ? "Franquia / Sinistro Pista: " + motivo
+                : "Cobrança de Franquia de Pista [" + trackingCode + "]";
+
+        TransacaoApexPay transacao = new TransacaoApexPay(
+                usuario,
+                "SINISTRO_PISTA",
+                valor,
+                desc,
+                trackingCode
+        );
+        return transacaoRepository.save(transacao);
+    }
+
+    @Transactional
+    public TransacaoApexPay debitarValorLiquido(Usuario usuario, BigDecimal valorLiquido, String trackingCode, String descricao) {
+        usuario.debitarSaldo(valorLiquido);
+        usuarioRepository.update(usuario);
+
+        TransacaoApexPay transacao = new TransacaoApexPay(
+                usuario,
+                "DEBITO_RESERVA",
+                valorLiquido,
+                descricao,
+                trackingCode
+        );
+        return transacaoRepository.save(transacao);
+    }
+
     public Map<String, Object> getResumoCarteira(String email) {
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado: " + email));

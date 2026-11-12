@@ -212,7 +212,7 @@ export function FleetCompareSection({
                         {/* Linha 3: Preço e Status */}
                         <div className="py-4 space-y-1.5 text-xs sm:text-sm">
                           <div className="flex items-center justify-between">
-                            <span className="text-white/55">Sessão / Diária</span>
+                            <span className="text-white/55">Sessão Track Experience</span>
                             <span className="text-white font-medium tabular-nums">
                               {formatPrice(car.precoPorDia)}
                             </span>

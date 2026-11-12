@@ -5,10 +5,12 @@ import PageTransition from '@/components/PageTransition.tsx';
 import PedidosPage from '@/features/booking/pages/PedidosPage';
 import MeusAlugueisPage from '@/features/booking/pages/MeusAlugueisPage';
 import AnalisesPage from '@/features/bank/pages/AnalisesPage';
+import ApexPayPage from '@/features/bank/pages/ApexPayPage';
+import AdminDashboardPage from '@/features/bank/pages/AdminDashboardPage';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import ToastContainer from '@/components/ui/ToastContainer';
 
-import AuthModule from '@/components/auth/AuthModule';
+import AuthPage from '@/features/auth/pages/AuthPage';
 import CarsPage from '@/features/cars/pages/CarsPage.tsx';
 import CarDetailPage from '@/features/cars/pages/CarDetailPage.tsx';
 import FrotaPage from '@/features/cars/pages/FrotaPage.tsx';
@@ -28,11 +30,13 @@ function NotFound() {
 export default function App() {
   return (
     <Router>
-      <AuthModule />
       <ToastContainer />
       
       <Routes>
         <Route path="/" element={<PageTransition><HomeLayout /></PageTransition>} />
+        <Route path="/login" element={<PageTransition><AuthPage initialMode="login" /></PageTransition>} />
+        <Route path="/cadastro" element={<PageTransition><AuthPage initialMode="register" /></PageTransition>} />
+        <Route path="/auth" element={<PageTransition><AuthPage /></PageTransition>} />
 
         <Route element={<Layout />}>
           {/* Rota pública de pistas oficiais */}
@@ -46,7 +50,7 @@ export default function App() {
           <Route
             path="/frota"
             element={
-              <ProtectedRoute allowedRoles={['EMPRESA']}>
+              <ProtectedRoute allowedRoles={['ADMIN', 'EMPRESA']}>
                 <PageTransition><FrotaPage /></PageTransition>
               </ProtectedRoute>
             }
@@ -56,7 +60,7 @@ export default function App() {
           <Route
             path="/pedidos"
             element={
-              <ProtectedRoute allowedRoles={['EMPRESA', 'BANCO']}>
+              <ProtectedRoute allowedRoles={['ADMIN', 'EMPRESA', 'BANCO']}>
                 <PageTransition><PedidosPage /></PageTransition>
               </ProtectedRoute>
             }
@@ -78,6 +82,26 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={['BANCO']}>
                 <PageTransition><AnalisesPage /></PageTransition>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Carteira ApexPay do Piloto */}
+          <Route
+            path="/apexpay"
+            element={
+              <ProtectedRoute allowedRoles={['CLIENTE', 'ADMIN']}>
+                <PageTransition><ApexPayPage /></PageTransition>
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Painel Executivo Administrativo */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute allowedRoles={['ADMIN']}>
+                <PageTransition><AdminDashboardPage /></PageTransition>
               </ProtectedRoute>
             }
           />

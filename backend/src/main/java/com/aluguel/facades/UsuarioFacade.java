@@ -2,13 +2,18 @@ package com.aluguel.facades;
 
 import com.aluguel.models.*;
 import com.aluguel.repositories.*;
+import com.aluguel.utils.CnhValidator;
 import jakarta.inject.Singleton;
 import jakarta.transaction.Transactional;
 import org.mindrot.jbcrypt.BCrypt;
-import java.util.Map;
-import java.util.ArrayList;
-import java.util.List;
+
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Singleton
 public class UsuarioFacade {
@@ -31,10 +36,14 @@ public class UsuarioFacade {
     @Transactional
     @SuppressWarnings("unchecked")
     public Usuario registrar(Map<String, Object> data) {
-        String role = (String) data.get("role");
-        if (role == null || (!role.equals("CLIENTE") && !role.equals("EMPRESA") && !role.equals("BANCO"))) {
-            throw new IllegalArgumentException("Perfil de usuário inválido. Escolha CLIENTE, EMPRESA ou BANCO.");
+        String rawRole = data.get("role") != null ? data.get("role").toString().trim().toUpperCase() : "CLIENTE";
+        if (rawRole.isEmpty()) {
+            rawRole = "CLIENTE";
         }
+        if (!"CLIENTE".equals(rawRole)) {
+            throw new IllegalArgumentException("Perfil de usuário inválido. O cadastro público é exclusivo para Pilotos/Clientes Apex.");
+        }
+        data.put("role", "CLIENTE");
 
         String email = (String) data.get("email");
         if (email == null || email.trim().isEmpty()) {
@@ -44,68 +53,112 @@ public class UsuarioFacade {
             throw new IllegalArgumentException("Já existe um usuário cadastrado com este e-mail.");
         }
 
-        if ("CLIENTE".equals(role)) {
-            String cpf = (String) data.get("cpf");
-            if (cpf == null || cpf.trim().isEmpty()) {
-                throw new IllegalArgumentException("O CPF é obrigatório para clientes.");
+        String cpf = (String) data.get("cpf");
+        if (cpf == null || cpf.trim().isEmpty()) {
+            throw new IllegalArgumentException("O CPF é obrigatório para clientes.");
+        }
+        if (clienteRepository.findByCpf(cpf.trim()).isPresent()) {
+            throw new IllegalArgumentException("Já existe um cliente cadastrado com este CPF.");
+        }
+
+        Cliente c = new Cliente();
+        preencherDadosBase(c, data);
+        c.setCpf(cpf.trim());
+        c.setRg((String) data.get("rg"));
+        c.setProfissao((String) data.get("profissao"));
+
+        // Dados opcionais de CNH / data de nascimento no momento do cadastro
+        if (data.get("cnhNumero") != null && !data.get("cnhNumero").toString().isBlank()) {
+            String cnhLimpa = data.get("cnhNumero").toString().replaceAll("\\D", "");
+            if (!CnhValidator.isValid(cnhLimpa)) {
+                throw new IllegalArgumentException("Número de CNH inválido pelo algoritmo oficial (Módulo 11).");
             }
-            if (clienteRepository.findByCpf(cpf.trim()).isPresent()) {
-                throw new IllegalArgumentException("Já existe um cliente cadastrado com este CPF.");
-            }
+            c.setCnhNumero(cnhLimpa);
+            c.setCnhCategoria(data.get("cnhCategoria") != null ? data.get("cnhCategoria").toString() : "B");
+        }
+        if (data.get("dataNascimento") != null && !data.get("dataNascimento").toString().isBlank()) {
+            c.setDataNascimento(LocalDate.parse(data.get("dataNascimento").toString()));
+        }
 
-            Cliente c = new Cliente();
-            preencherDadosBase(c, data);
-            c.setCpf(cpf.trim());
-            c.setRg((String) data.get("rg"));
-            c.setProfissao((String) data.get("profissao"));
+        // Lendo e validando rendimentos
+        if (data.containsKey("rendimentos") && data.get("rendimentos") != null) {
+            List<Map<String, Object>> rendimentosJson = (List<Map<String, Object>>) data.get("rendimentos");
+            List<Rendimento> listaRendimentos = new ArrayList<>();
 
-            // Lendo e validando rendimentos
-            if (data.containsKey("rendimentos") && data.get("rendimentos") != null) {
-                List<Map<String, Object>> rendimentosJson = (List<Map<String, Object>>) data.get("rendimentos");
-                List<Rendimento> listaRendimentos = new ArrayList<>();
+            for (Map<String, Object> item : rendimentosJson) {
+                if (item == null) continue;
+                Rendimento rendimento = new Rendimento();
 
-                for (Map<String, Object> item : rendimentosJson) {
-                    if (item == null) continue;
-                    Rendimento rendimento = new Rendimento();
-                    
-                    if (item.containsKey("empregadora") && item.get("empregadora") != null) {
-                        rendimento.setEmpregadora(item.get("empregadora").toString().trim());
-                    }
-                    
-                    if (item.containsKey("valor") && item.get("valor") != null) {
-                        String valStr = item.get("valor").toString().trim();
-                        if (!valStr.isEmpty()) {
-                            try {
-                                rendimento.setValor(new BigDecimal(valStr));
-                            } catch (Exception ignored) {}
-                        }
-                    }
-                    
-                    if ((rendimento.getEmpregadora() != null && !rendimento.getEmpregadora().isEmpty()) ||
-                        (rendimento.getValor() != null && rendimento.getValor().compareTo(BigDecimal.ZERO) > 0)) {
-                        listaRendimentos.add(rendimento);
+                if (item.containsKey("empregadora") && item.get("empregadora") != null) {
+                    rendimento.setEmpregadora(item.get("empregadora").toString().trim());
+                }
+
+                if (item.containsKey("valor") && item.get("valor") != null) {
+                    String valStr = item.get("valor").toString().trim();
+                    if (!valStr.isEmpty()) {
+                        try {
+                            rendimento.setValor(new BigDecimal(valStr));
+                        } catch (Exception ignored) {}
                     }
                 }
-                
-                c.setRendimentos(listaRendimentos);
+
+                if ((rendimento.getEmpregadora() != null && !rendimento.getEmpregadora().isEmpty()) ||
+                    (rendimento.getValor() != null && rendimento.getValor().compareTo(BigDecimal.ZERO) > 0)) {
+                    listaRendimentos.add(rendimento);
+                }
             }
 
-            clienteFacade.validarRegrasDeNegocio(c);
-            return clienteRepository.save(c);
-        } else {
-            String cnpj = (String) data.get("cnpj");
-            if (cnpj == null || cnpj.trim().isEmpty()) {
-                throw new IllegalArgumentException("O CNPJ é obrigatório para empresas e bancos.");
-            }
-            if (agenteRepository.findByCnpj(cnpj.trim()).isPresent()) {
-                throw new IllegalArgumentException("Já existe uma instituição cadastrada com este CNPJ.");
-            }
-
-            Agente a = new Agente();
-            preencherDadosBase(a, data);
-            a.setCnpj(cnpj.trim());
-            return agenteRepository.save(a);
+            c.setRendimentos(listaRendimentos);
         }
+
+        clienteFacade.validarRegrasDeNegocio(c);
+        return clienteRepository.save(c);
+    }
+
+    public Map<String, Object> buscarPerfil(String email) {
+        Usuario u = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
+
+        Map<String, Object> perfil = new HashMap<>();
+        perfil.put("id", u.getId());
+        perfil.put("nome", u.getNome());
+        perfil.put("email", u.getEmail());
+        perfil.put("role", u.getRole());
+        perfil.put("cnhNumero", u.getCnhNumero());
+        perfil.put("cnhCategoria", u.getCnhCategoria());
+        perfil.put("dataNascimento", u.getDataNascimento());
+        perfil.put("saldoCarteira", u.getSaldoCarteira() != null ? u.getSaldoCarteira() : BigDecimal.ZERO);
+        perfil.put("totalDepositadoHistorico", u.getTotalDepositadoHistorico() != null ? u.getTotalDepositadoHistorico() : BigDecimal.ZERO);
+        perfil.put("statusFinanceiro", u.getStatusFinanceiro() != null ? u.getStatusFinanceiro() : "REGULAR");
+        perfil.put("inadimplente", u.isInadimplente());
+        perfil.put("tierFidelidade", u.getTierFidelidade());
+        perfil.put("porcentagemDesconto", u.getFatorDesconto().multiply(new BigDecimal("100")).intValue());
+        return perfil;
+    }
+
+    @Transactional
+    public Map<String, Object> atualizarHabilitacao(String email, String cnhNumero, String cnhCategoria, String dataNascimento) {
+        Usuario u = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado."));
+
+        if (cnhNumero == null || !CnhValidator.isValid(cnhNumero)) {
+            throw new IllegalArgumentException("CNH inválida pelo algoritmo oficial (Módulo 11). Para testes utilize: " + CnhValidator.CNH_TESTE_OFICIAL);
+        }
+        String cnhLimpa = cnhNumero.replaceAll("\\D", "");
+        u.setCnhNumero(cnhLimpa);
+        u.setCnhCategoria(cnhCategoria != null && !cnhCategoria.isBlank() ? cnhCategoria.toUpperCase() : "B");
+
+        if (dataNascimento != null && !dataNascimento.isBlank()) {
+            LocalDate nascimento = LocalDate.parse(dataNascimento);
+            long idade = ChronoUnit.YEARS.between(nascimento, LocalDate.now());
+            if (idade < 21) {
+                throw new IllegalArgumentException("Idade mínima de 21 anos exigida para pilotagem em pista.");
+            }
+            u.setDataNascimento(nascimento);
+        }
+
+        usuarioRepository.update(u);
+        return buscarPerfil(email);
     }
 
     private void preencherDadosBase(Usuario u, Map<String, Object> data) {
@@ -117,7 +170,7 @@ public class UsuarioFacade {
         u.setEmail(((String) data.get("email")).trim());
         u.setEndereco((String) data.get("endereco"));
         u.setRole("ROLE_" + data.get("role"));
-        
+
         String senhaPura = (String) data.get("password");
         if (senhaPura == null || senhaPura.trim().length() < 6) {
             throw new IllegalArgumentException("A senha deve ter no mínimo 6 caracteres.");

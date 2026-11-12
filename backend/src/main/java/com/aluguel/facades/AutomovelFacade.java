@@ -29,6 +29,10 @@ public class AutomovelFacade {
     }
 
     public List<Automovel> listarPorProprietario(String emailProprietario) {
+        Usuario usuario = usuarioRepository.findByEmail(emailProprietario).orElse(null);
+        if (usuario != null && "ROLE_ADMIN".equals(usuario.getRole())) {
+            return listarTodos();
+        }
         return automovelRepository.findByProprietarioEmail(emailProprietario);
     }
 
@@ -44,7 +48,11 @@ public class AutomovelFacade {
         Automovel carro = automovelRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Carro não encontrado"));
 
-        if (!carro.getProprietario().getEmail().equals(emailLogado)) {
+        boolean isAdmin = usuarioRepository.findByEmail(emailLogado)
+                .map(u -> "ROLE_ADMIN".equals(u.getRole()))
+                .orElse(false);
+
+        if (!isAdmin && !carro.getProprietario().getEmail().equals(emailLogado)) {
             throw new IllegalArgumentException("Você não tem permissão para editar este veículo.");
         }
 
@@ -63,7 +71,11 @@ public class AutomovelFacade {
         Automovel carro = automovelRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Carro não encontrado"));
 
-        if (!carro.getProprietario().getEmail().equals(emailLogado)) {
+        boolean isAdmin = usuarioRepository.findByEmail(emailLogado)
+                .map(u -> "ROLE_ADMIN".equals(u.getRole()))
+                .orElse(false);
+
+        if (!isAdmin && !carro.getProprietario().getEmail().equals(emailLogado)) {
             throw new IllegalArgumentException("Você não tem permissão para excluir este veículo.");
         }
 

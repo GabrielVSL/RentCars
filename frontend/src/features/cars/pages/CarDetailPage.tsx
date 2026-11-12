@@ -399,7 +399,10 @@ export default function CarDetailPage() {
             <div className="w-full flex flex-col sm:flex-row sm:items-end justify-between gap-2 mb-2 sm:mb-0 sm:px-8">
               <div>
                 <p className="text-[11px] font-mono uppercase tracking-[0.2em] text-white/45">
-                  {car.marca} · {displaySpecs.circuit}
+                  {car.marca} ·{' '}
+                  {car.circuitosDisponiveis && car.circuitosDisponiveis.length > 0
+                    ? car.circuitosDisponiveis.map((c) => c.nome.split(' ')[0]).join(' · ')
+                    : displaySpecs.circuit}
                 </p>
               </div>
               <div className="sm:text-right">
@@ -407,7 +410,7 @@ export default function CarDetailPage() {
                   {car.modelo}
                 </h3>
                 <p className="text-xs sm:text-sm text-white/55 mt-0.5 tabular-nums">
-                  a partir de <span className="text-white font-medium">{formatPrice(car.precoPorDia)}</span> / diária
+                  a partir de <span className="text-white font-medium">{formatPrice(car.precoPorDia)}</span> / sessão
                 </p>
               </div>
             </div>

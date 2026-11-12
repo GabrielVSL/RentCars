@@ -11,91 +11,6 @@ export type CircuitId =
 
 export type CircuitCategory = 'ALL' | 'F1' | 'ENDURANCE' | 'LEGENDS';
 
-export interface TrackCar {
-  id: string;
-  brand: string;
-  model: string;
-  power: string;
-  acceleration: string;
-  topSpeed: string;
-  image: string;
-}
-
-export const TRACK_FLEET: Record<string, TrackCar> = {
-  porsche: {
-    id: 'porsche-gt3rs',
-    brand: 'Porsche',
-    model: '911 GT3 RS (992)',
-    power: '525 CV',
-    acceleration: '3.2s',
-    topSpeed: '296 KM/H',
-    image: '/cars/porsche-studio.webp',
-  },
-  bmw: {
-    id: 'bmw-m4-comp',
-    brand: 'BMW',
-    model: 'M4 Competition Track Pack',
-    power: '510 CV',
-    acceleration: '3.5s',
-    topSpeed: '290 KM/H',
-    image: '/cars/bmw-studio.webp',
-  },
-  amg: {
-    id: 'amg-gt-track',
-    brand: 'Mercedes-AMG',
-    model: 'GT Track Series',
-    power: '734 CV',
-    acceleration: '2.8s',
-    topSpeed: '315 KM/H',
-    image: '/cars/amg-studio.webp',
-  },
-  audi: {
-    id: 'audi-r8-v10',
-    brand: 'Audi',
-    model: 'R8 V10 Performance',
-    power: '620 CV',
-    acceleration: '3.1s',
-    topSpeed: '331 KM/H',
-    image: '/cars/audi-studio.webp',
-  },
-  cayman: {
-    id: 'porsche-cayman-gt4rs',
-    brand: 'Porsche',
-    model: '718 Cayman GT4 RS',
-    power: '500 CV',
-    acceleration: '3.4s',
-    topSpeed: '315 KM/H',
-    image: '/cars/cayman-studio.webp',
-  },
-  m8: {
-    id: 'bmw-m8-comp',
-    brand: 'BMW',
-    model: 'M8 Competition Coupé',
-    power: '625 CV',
-    acceleration: '3.2s',
-    topSpeed: '305 KM/H',
-    image: '/cars/m8-studio.webp',
-  },
-  amgBs: {
-    id: 'amg-gt-black-series',
-    brand: 'Mercedes-AMG',
-    model: 'GT Black Series',
-    power: '730 CV',
-    acceleration: '3.2s',
-    topSpeed: '325 KM/H',
-    image: '/cars/amg-bs-studio.webp',
-  },
-  etronGt: {
-    id: 'audi-rs-etron-gt',
-    brand: 'Audi',
-    model: 'RS e-tron GT Performance',
-    power: '925 CV',
-    acceleration: '2.5s',
-    topSpeed: '250 KM/H',
-    image: '/cars/etrongt-studio.webp',
-  },
-};
-
 export interface Circuit {
   id: CircuitId;
   code: string;
@@ -126,7 +41,6 @@ export interface Circuit {
   videoThumbnail: string;
   synopsis: string;
   nextDates: string[];
-  availableCars: TrackCar[];
   sectors: { name: string; targetTime: string }[];
 }
 
@@ -172,7 +86,6 @@ export const CIRCUITS: Circuit[] = [
     videoThumbnail: '/circuits/nurburgring-video.jpg',
     synopsis: "Conhecido mundialmente como o 'Inferno Verde', Nürburgring Nordschleife é a meca absoluta do automobilismo. São mais de 20 km de asfalto encravados nas montanhas alemãs de Eifel. Ao reservar sua sessão, você recebe suporte de box privativo, seguro de pista internacional e o carro calibrado para voltas rápidas inesquecíveis.",
     nextDates: ['15 Nov · Sáb', '22 Nov · Dom', '06 Dez · Sáb'],
-    availableCars: [TRACK_FLEET.porsche, TRACK_FLEET.bmw, TRACK_FLEET.amg],
     "sectors": [
       {
         "name": "Sector 1 (Hatzenbach / Flugplatz)",
@@ -218,7 +131,6 @@ export const CIRCUITS: Circuit[] = [
     videoThumbnail: '/circuits/le_mans-video.jpg',
     synopsis: "Palco lendário das 24 Horas de Le Mans, este circuito combina o traçado de pista fechada com estradas rurais históricas da França. Sinta a velocidade contínua na reta Mulsanne em sessões exclusivas de track day com mecânicos de apoio dedicados e credencial VIP para o paddock.",
     nextDates: ['18 Nov · Ter', '29 Nov · Sáb', '13 Dez · Dom'],
-    availableCars: [TRACK_FLEET.m8, TRACK_FLEET.porsche, TRACK_FLEET.amg],
     "sectors": [
       {
         "name": "Sector 1 (Dunlop / Tertre Rouge)",
@@ -264,7 +176,6 @@ export const CIRCUITS: Circuit[] = [
     videoThumbnail: '/circuits/spa-video.jpg',
     synopsis: "Localizado no coração das densas florestas das Ardenas, Spa é aclamado como a mais espetacular montanha-russa do motorsport mundial. Acelere montanha acima pela mítica Eau Rouge e Raidillon com nossa equipe no pitlane e cobertura securitária completa para o seu supercarro.",
     nextDates: ['16 Nov · Dom', '23 Nov · Dom', '07 Dez · Dom'],
-    availableCars: [TRACK_FLEET.porsche, TRACK_FLEET.bmw, TRACK_FLEET.audi],
     "sectors": [
       {
         "name": "Sector 1 (Eau Rouge / Raidillon)",
@@ -310,7 +221,6 @@ export const CIRCUITS: Circuit[] = [
     videoThumbnail: '/circuits/monza-video.jpg',
     synopsis: "O histórico 'Templo da Velocidade' nos arredores de Milão é o autódromo mais rápido da Europa. Ideal para quem deseja explorar o limite de aceleração em retas monumentais e frear forte nas icônicas chicanes de Ascari e Parabolica com suporte técnico de ponta.",
     nextDates: ['17 Nov · Seg', '24 Nov · Seg', '08 Dez · Seg'],
-    availableCars: [TRACK_FLEET.amg, TRACK_FLEET.porsche, TRACK_FLEET.audi],
     "sectors": [
       {
         "name": "Sector 1 (Variante del Rettifilo)",
@@ -356,7 +266,6 @@ export const CIRCUITS: Circuit[] = [
     videoThumbnail: '/circuits/monaco-video.jpg',
     synopsis: "O traçado urbano mais glamoroso e lendário do automobilismo. Pilotar pelas avenidas de Monte Carlo, contornar a curva do Cassino e atravessar o famoso túnel à beira do Mar Mediterrâneo é uma experiência inesquecível com atendimento exclusivo de concierge.",
     nextDates: ['20 Nov · Qui', '28 Nov · Sex', '12 Dez · Sex'],
-    availableCars: [TRACK_FLEET.cayman, TRACK_FLEET.porsche, TRACK_FLEET.amg],
     "sectors": [
       {
         "name": "Sector 1 (Sainte-Dévote / Beau Rivage)",
@@ -402,7 +311,6 @@ export const CIRCUITS: Circuit[] = [
     videoThumbnail: '/circuits/silverstone-video.jpg',
     synopsis: "O berço histórico da Fórmula 1 e capital do motorsport britânico. Com curvas de altíssima velocidade como Copse, Maggotts e Becketts, Silverstone testa a precisão aerodinâmica do carro. Nossa equipe recepciona você no complexo The Wing com estrutura de box privativo.",
     nextDates: ['19 Nov · Qua', '27 Nov · Qui', '10 Dez · Qua'],
-    availableCars: [TRACK_FLEET.amgBs, TRACK_FLEET.bmw, TRACK_FLEET.porsche],
     "sectors": [
       {
         "name": "Sector 1 (Abbey / Copse)",
@@ -448,7 +356,6 @@ export const CIRCUITS: Circuit[] = [
     videoThumbnail: '/circuits/interlagos-video.jpg',
     synopsis: "Com seu lendário S do Senna e traçado técnico ondulado no sentido anti-horário, Interlagos é um dos circuitos mais reverenciados do automobilismo mundial. Alugue seu supercarro para uma bateria cronometrada com telemetria e suporte mecânico completo.",
     nextDates: ['21 Nov · Sex', '30 Nov · Dom', '14 Dez · Dom'],
-    availableCars: [TRACK_FLEET.porsche, TRACK_FLEET.bmw, TRACK_FLEET.audi],
     "sectors": [
       {
         "name": "Sector 1 (S do Senna / Curva do Sol)",
@@ -494,7 +401,6 @@ export const CIRCUITS: Circuit[] = [
     videoThumbnail: '/circuits/suzuka-video.jpg',
     synopsis: "Famoso por seu desenho em formato de '8' com cruzamento em desnível e pelas míticas curvas dos Esses e da 130R, Suzuka é a obra-prima das pistas asiáticas. Desfrute de voltas rápidas com suporte operacional completo no pitlane oficial.",
     nextDates: ['25 Nov · Ter', '02 Dez · Ter', '16 Dez · Ter'],
-    availableCars: [TRACK_FLEET.etronGt, TRACK_FLEET.amg, TRACK_FLEET.bmw],
     "sectors": [
       {
         "name": "Sector 1 (S Curves / Dunlop)",
