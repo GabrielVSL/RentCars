@@ -28,7 +28,7 @@ public class AdminDashboardController {
     }
 
     @Get("/dashboard/publico")
-    @Secured(SecurityRule.IS_ANONYMOUS)
+    @Secured({"ROLE_ADMIN", "ROLE_EMPRESA", "ROLE_BANCO"})
     public HttpResponse<?> getDashboardPublico() {
         return HttpResponse.ok(facade.getMetricasDashboard());
     }

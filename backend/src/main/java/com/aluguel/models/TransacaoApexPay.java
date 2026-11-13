@@ -1,5 +1,6 @@
 package com.aluguel.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.micronaut.serde.annotation.Serdeable;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
@@ -16,6 +17,7 @@ public class TransacaoApexPay {
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "usuario_id", nullable = false)
+    @JsonIgnoreProperties({"senha", "saldoCarteira", "totalDepositadoHistorico"})
     private Usuario usuario;
 
     @Column(nullable = false, length = 30)

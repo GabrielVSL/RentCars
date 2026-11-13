@@ -2,232 +2,388 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  ShieldCheck, UserCircle,
-  Activity, Loader2, 
-  History, ChevronDown
+import {
+  ShieldCheck,
+  UserCircle,
+  Activity,
+  Loader2,
+  History,
+  ChevronDown,
+  Flag,
 } from 'lucide-react';
 import { api } from '@/services/api';
 import { toast } from '@/store/useToastStore';
+import { useCurrencyStore } from '@/store/useCurrencyStore';
+import { resolveStudioCarImage } from '@/lib/carPresentation';
 
 interface Pedido {
   id: number;
-  cliente: { 
-    nome: string; 
-    cpf: string; 
-    rendimentos: { valor: number; empregadora: string }[];
+  cliente: {
+    nome: string;
+    cpf: string;
+    rendimentos?: { valor: number; empregadora: string }[];
   };
-  automovel: { modelo: string; placa: string };
+  automovel?: { marca?: string; modelo: string; placa: string; imageUrl?: string } | null;
+  tipoServico?: string;
   valorTotal: number;
+  valorFinal?: number;
+  descontoFidelidade?: number;
   status: 'PENDENTE' | 'PENDENTE_EMPRESA' | 'PENDENTE_BANCO' | 'APROVADO' | 'REJEITADO' | 'CANCELADO';
   dataInicio: string;
   dataPedido: string;
 }
 
 export default function AnalisesPage() {
+  const { formatPrice } = useCurrencyStore();
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
+  const [clientMode, setClientMode] = useState<'TODOS' | 'PENDENTES'>('TODOS');
 
   useEffect(() => {
     const fetchAnalises = async () => {
       try {
         const response = await api.get('/api/pedidos');
-        setPedidos(response.data);
-      } catch (error) { console.error(error); } finally { setIsLoading(false); }
+        setPedidos(Array.isArray(response.data) ? response.data : []);
+      } catch (error) {
+        console.error(error);
+        toast.error('Erro ao carregar dados de auditoria.');
+      } finally {
+        setIsLoading(false);
+      }
     };
     fetchAnalises();
   }, []);
 
   // MOTOR DE SCORE: Inicia em 50 e flutua com base na matemática financeira
   const calcularScore = (historico: Pedido[], rendaTotal: number, valorAtual: number) => {
-    let score = 50; // Base inicial
+    let score = 50;
 
-    // 1. Análise Comportamental (Histórico)
-    historico.forEach(p => {
+    historico.forEach((p) => {
       if (p.status === 'APROVADO') score += 15;
       if (p.status === 'REJEITADO') score -= 20;
       if (p.status === 'CANCELADO') score -= 5;
     });
 
-    // 2. Análise de Risco Financeiro (Comprometimento)
     if (rendaTotal > 0) {
       const comprometimento = valorAtual / rendaTotal;
-      if (comprometimento > 0.6) score -= 30; // Mais de 60% da renda = Perigoso
+      if (comprometimento > 0.6) score -= 30;
       else if (comprometimento > 0.4) score -= 15;
       else if (comprometimento > 0.2) score -= 5;
     }
 
-    // Trava os limites matemáticos
     score = Math.max(0, Math.min(100, score));
 
-    // Retorna a classificação
-    if (score >= 70) return { score, label: 'Score Alto', color: 'text-emerald-400 bg-emerald-400/10' };
-    if (score >= 40) return { score, label: 'Score Médio', color: 'text-amber-400 bg-amber-400/10' };
-    return { score, label: 'Score Crítico', color: 'text-rose-500 bg-rose-500/10' };
+    if (score >= 70) {
+      return {
+        score,
+        label: 'Score Alto',
+        color: 'text-emerald-300 bg-emerald-500/15 border-emerald-500/30',
+      };
+    }
+    if (score >= 40) {
+      return {
+        score,
+        label: 'Score Médio',
+        color: 'text-amber-300 bg-amber-500/15 border-amber-500/30',
+      };
+    }
+    return {
+      score,
+      label: 'Score Crítico',
+      color: 'text-rose-300 bg-rose-500/15 border-rose-500/30',
+    };
   };
 
-  // AGRUPAMENTO E FILTRO: Separa o que está ativo do que expirou/histórico
+  // AGRUPAMENTO E FILTRO: Separa pendentes ativos do histórico
   const analisePorCliente = useMemo(() => {
     const hoje = new Date();
-    const grupos: Record<string, { cliente: Pedido['cliente'], historico: Pedido[], pAtivos: Pedido[] }> = {};
+    const grupos: Record<string, { cliente: Pedido['cliente']; historico: Pedido[]; pAtivos: Pedido[] }> = {};
 
-    pedidos.forEach(p => {
-      if (!grupos[p.cliente.cpf]) {
-        grupos[p.cliente.cpf] = { cliente: p.cliente, historico: [], pAtivos: [] };
+    pedidos.forEach((p) => {
+      if (!p.cliente) return;
+      const cpfKey = p.cliente.cpf || `cliente-${p.id}`;
+      if (!grupos[cpfKey]) {
+        grupos[cpfKey] = { cliente: p.cliente, historico: [], pAtivos: [] };
       }
 
-      // Aceita tanto PENDENTE_BANCO quanto o PENDENTE antigo (legado)
       const isPendente = p.status === 'PENDENTE_BANCO' || p.status === 'PENDENTE';
-      const isExpirado = new Date(p.dataInicio) < hoje;
+      const isExpirado = p.dataInicio ? new Date(p.dataInicio) < hoje : false;
 
-      // Se está pendente e a data não expirou, vai para a fila de aprovação
       if (isPendente && !isExpirado) {
-        grupos[p.cliente.cpf].pAtivos.push(p);
+        grupos[cpfKey].pAtivos.push(p);
       } else {
-        // Se já foi aprovado, rejeitado, ou a data de retirar o carro já passou, vira apenas histórico
-        grupos[p.cliente.cpf].historico.push(p);
+        grupos[cpfKey].historico.push(p);
       }
     });
 
-    // Só exibe na tela os clientes que têm pelo menos 1 pedido ATIVO precisando de análise
-    return Object.values(grupos).sort((a, b) => b.pAtivos.length - a.pAtivos.length);
-  }, [pedidos]);
+    return Object.values(grupos)
+      .filter((g) => (clientMode === 'PENDENTES' ? g.pAtivos.length > 0 : true))
+      .sort((a, b) => b.pAtivos.length - a.pAtivos.length);
+  }, [pedidos, clientMode]);
 
   const handleDecisaoCredito = async (id: number, status: 'APROVADO' | 'REJEITADO') => {
     try {
       await api.put(`/api/pedidos/${id}/avaliar?status=${status}`);
-      // Atualiza o state local para refletir na hora
-      setPedidos(prev => prev.map(p => p.id === id ? { ...p, status } : p));
-      toast.success(status === 'APROVADO' ? "Crédito aprovado com sucesso!" : "Crédito recusado.");
-    } catch (error) { toast.error("Erro na análise de crédito."); }
+      setPedidos((prev) => prev.map((p) => (p.id === id ? { ...p, status } : p)));
+      toast.success(status === 'APROVADO' ? 'Crédito aprovado com sucesso!' : 'Crédito recusado.');
+    } catch {
+      toast.error('Erro na análise de crédito.');
+    }
   };
 
   return (
-    <div className="min-h-screen bg-[#0B0F1A] text-slate-300 pt-24 pb-20">
-      <div className="max-w-6xl mx-auto px-6">
-        
-        <header className="mb-10">
-          <h1 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
-            <Activity className="text-blue-500" /> Auditoria de Crédito
-          </h1>
-          <p className="text-slate-500 mt-2">Pedidos com data expirada são arquivados automaticamente. Score base: 50 pts.</p>
+    <div className="min-h-screen bg-[#08090C] text-white pt-28 pb-24 selection:bg-[#FF1717] selection:text-white">
+      <div className="max-w-6xl mx-auto px-6 space-y-8">
+        <header className="pb-8 border-b border-white/10 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
+          <div>
+            <p className="text-[11px] font-mono uppercase tracking-[0.22em] text-[#FF1717] mb-2">
+              Risk &amp; Credit Bureau · Auditoria
+            </p>
+            <h1 className="text-3xl sm:text-4xl font-medium text-white tracking-tight flex items-center gap-3">
+              <Activity className="text-[#FF1717]" size={28} /> Auditoria de Crédito &amp; Score
+            </h1>
+            <p className="text-sm text-white/60 mt-2">
+              Avalie renda declarada, comprometimento por sessão e cronologia de pagamentos por CPF. Score base: 50 pts.
+            </p>
+          </div>
+
+          <div className="flex gap-2">
+            {(
+              [
+                { id: 'TODOS', label: 'Todos os Clientes' },
+                { id: 'PENDENTES', label: 'Com Pendências' },
+              ] as const
+            ).map((opt) => (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => setClientMode(opt.id)}
+                className={`px-4 py-2 rounded-full text-xs font-medium transition-all cursor-pointer border whitespace-nowrap ${
+                  clientMode === opt.id
+                    ? 'bg-[#FF1717] text-white border-[#FF1717]'
+                    : 'bg-white/[0.03] text-white/65 border-white/10 hover:text-white'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
         </header>
 
         {isLoading ? (
-          <div className="flex justify-center py-20"><Loader2 className="animate-spin text-blue-500" size={40} /></div>
+          <div className="flex flex-col items-center justify-center py-24 gap-3 text-white/50">
+            <Loader2 className="animate-spin text-[#FF1717]" size={32} />
+            <span className="text-xs font-mono uppercase tracking-widest">Calculando scores...</span>
+          </div>
         ) : analisePorCliente.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 border border-slate-800 border-dashed rounded-3xl bg-slate-900/20">
-             <ShieldCheck size={48} className="text-slate-700 mb-4" />
-             <h3 className="text-xl font-bold text-slate-400">Nenhuma análise pendente</h3>
+          <div className="flex flex-col items-center justify-center py-20 border border-white/[0.08] rounded-2xl bg-[#11131A]">
+            <ShieldCheck size={44} className="text-white/25 mb-3" />
+            <h3 className="text-lg font-medium text-white">Nenhuma análise encontrada</h3>
+            <p className="text-sm text-white/50 mt-1">
+              {clientMode === 'PENDENTES'
+                ? 'Não há clientes aguardando auditoria bancária no momento.'
+                : 'Ainda não existem reservas registradas para auditoria.'}
+            </p>
           </div>
         ) : (
           <div className="space-y-4">
             {analisePorCliente.map((grupo) => {
-              // Pega o pedido mais recente para usar como base de valor
               const pAtivo = grupo.pAtivos[0] || grupo.historico[0];
-              const rendaTotal = grupo.cliente.rendimentos?.reduce((s, r) => s + r.valor, 0) || 1;
-              const valorPedido = pAtivo?.valorTotal || 0;
+              const rendaTotal = grupo.cliente.rendimentos?.reduce((s, r) => s + (Number(r.valor) || 0), 0) || 0;
+              const valorPedido = pAtivo?.valorFinal ?? pAtivo?.valorTotal ?? 0;
               const analiseScore = calcularScore(grupo.historico, rendaTotal, valorPedido);
               const totalAcoes = grupo.historico.length + grupo.pAtivos.length;
+              const clientKey = grupo.cliente.cpf || grupo.cliente.nome;
 
               return (
-                <div key={grupo.cliente.cpf} className="bg-slate-900/40 border border-slate-800 rounded-2xl overflow-hidden transition-all">
-                  
+                <div
+                  key={clientKey}
+                  className="bg-[#11131A] border border-white/[0.08] rounded-2xl overflow-hidden transition-all"
+                >
                   {/* CABEÇALHO DO CLIENTE (Resumo) */}
-                  <div className="p-6 flex items-center justify-between gap-6">
-                    <div className="flex items-center gap-4 min-w-[250px] relative">
-                      <div className="w-12 h-12 bg-slate-800 rounded-full flex items-center justify-center text-slate-500">
-                        <UserCircle size={24}/>
+                  <div className="p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                    <div className="flex items-center gap-4 min-w-[240px] relative">
+                      <div className="w-12 h-12 bg-white/[0.05] border border-white/10 rounded-full flex items-center justify-center text-white/60">
+                        <UserCircle size={24} />
                       </div>
-                      {/* O INDICADOR QUE VOCÊ PEDIU (Badge Vermelha se tiver múltiplos pedidos) */}
                       {totalAcoes > 1 && (
-                         <div className="absolute -top-1 left-8 bg-blue-600 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center border-2 border-[#0B0F1A]">
-                            {totalAcoes}
-                         </div>
+                        <div className="absolute -top-1 left-8 bg-[#FF1717] text-white text-[10px] font-mono font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-[#11131A]">
+                          {totalAcoes}
+                        </div>
                       )}
                       <div>
-                        <h3 className="font-bold text-white">{grupo.cliente.nome}</h3>
-                        <p className="text-xs font-mono text-slate-500">{grupo.cliente.cpf}</p>
+                        <h3 className="font-medium text-white">{grupo.cliente.nome}</h3>
+                        <p className="text-xs font-mono text-white/45">{grupo.cliente.cpf || 'CPF não informado'}</p>
                       </div>
                     </div>
 
-                    <div className="flex-1 grid grid-cols-3 gap-4">
+                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div>
-                        <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-1">Renda Declarada</p>
-                        <p className="text-emerald-400 font-bold text-sm">R$ {rendaTotal.toLocaleString('pt-BR')}</p>
+                        <p className="text-[10px] font-mono text-white/45 uppercase tracking-widest mb-1">
+                          Renda Declarada
+                        </p>
+                        <p className="text-emerald-400 font-mono font-semibold text-sm">
+                          {rendaTotal > 0 ? formatPrice(rendaTotal) : 'Não informada'}
+                        </p>
                       </div>
                       <div>
-                        <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-1">Custo da Avaliação</p>
-                        <p className="text-white font-bold text-sm">R$ {valorPedido.toLocaleString('pt-BR')}</p>
+                        <p className="text-[10px] font-mono text-white/45 uppercase tracking-widest mb-1">
+                          Última Sessão
+                        </p>
+                        <p className="text-white font-mono font-semibold text-sm">{formatPrice(valorPedido)}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-1">Score de Crédito</p>
+                        <p className="text-[10px] font-mono text-white/45 uppercase tracking-widest mb-1">
+                          Score de Crédito
+                        </p>
                         <div className="flex items-center gap-2">
-                           <span className={`text-sm font-black ${analiseScore.score >= 70 ? 'text-emerald-400' : analiseScore.score >= 40 ? 'text-amber-400' : 'text-rose-500'}`}>
-                             {analiseScore.score}
-                           </span>
-                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${analiseScore.color}`}>{analiseScore.label}</span>
+                          <span
+                            className={`text-sm font-mono font-bold ${
+                              analiseScore.score >= 70
+                                ? 'text-emerald-400'
+                                : analiseScore.score >= 40
+                                  ? 'text-amber-400'
+                                  : 'text-rose-400'
+                            }`}
+                          >
+                            {analiseScore.score}
+                          </span>
+                          <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${analiseScore.color}`}>
+                            {analiseScore.label}
+                          </span>
                         </div>
                       </div>
                     </div>
 
-                    <button onClick={() => setExpandedClient(expandedClient === grupo.cliente.cpf ? null : grupo.cliente.cpf)} className="p-2 hover:bg-slate-800 rounded-lg transition-colors">
-                      <ChevronDown className={`transition-transform ${expandedClient === grupo.cliente.cpf ? 'rotate-180' : ''}`} />
+                    <button
+                      type="button"
+                      onClick={() => setExpandedClient(expandedClient === clientKey ? null : clientKey)}
+                      className="self-end lg:self-auto p-2.5 bg-white/[0.04] hover:bg-white/10 border border-white/10 rounded-full transition-colors cursor-pointer"
+                    >
+                      <ChevronDown
+                        size={16}
+                        className={`transition-transform ${expandedClient === clientKey ? 'rotate-180' : ''}`}
+                      />
                     </button>
                   </div>
 
-                  {/* CONTEÚDO EXPANSÍVEL (Detalhes Mapeados) */}
+                  {/* CONTEÚDO EXPANSÍVEL */}
                   <AnimatePresence>
-                    {expandedClient === grupo.cliente.cpf && (
-                      <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} className="border-t border-slate-800 bg-slate-900/60">
-                        <div className="p-6 space-y-6">
-                          
-                          {/* Lista Completa (Ativos + Histórico) */}
+                    {expandedClient === clientKey && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="border-t border-white/[0.08] bg-[#08090C]/70 overflow-hidden"
+                      >
+                        <div className="p-6 space-y-4">
+                          <h4 className="text-[11px] font-mono text-white/50 uppercase tracking-widest flex items-center gap-2">
+                            <History size={14} className="text-[#FF1717]" /> Cronologia Completa do CPF
+                          </h4>
+
                           <div className="space-y-3">
-                            <h4 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
-                              <History size={14} /> Cronologia Completa do CPF
-                            </h4>
-                            
-                            {[...grupo.pAtivos, ...grupo.historico].map(p => {
-                               const isActive = grupo.pAtivos.some(ativo => ativo.id === p.id);
+                            {[...grupo.pAtivos, ...grupo.historico].map((p) => {
+                              const isActive = grupo.pAtivos.some((ativo) => ativo.id === p.id);
 
-
-                               return (
-                                <div key={p.id} className={`flex items-center justify-between p-4 rounded-xl border ${isActive ? 'bg-blue-500/5 border-blue-500/20' : 'bg-slate-800/30 border-slate-700/50'}`}>
-                                  <div className="flex items-center gap-6">
-                                    <div>
-                                      <p className="text-xs text-slate-500">Veículo</p>
-                                      <p className="text-sm font-bold text-slate-300">{p.automovel.modelo}</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-xs text-slate-500">Valor</p>
-                                      <p className="text-sm font-bold text-white">R$ {p.valorTotal?.toLocaleString('pt-BR') || '---'}</p>
-                                    </div>
-                                    <div>
-                                      <p className="text-xs text-slate-500">Situação</p>
-                                      {isActive ? (
-                                        <span className="text-[10px] font-black uppercase text-blue-400 animate-pulse">AGUARDANDO AUDITORIA</span>
+                              return (
+                                <div
+                                  key={p.id}
+                                  className={`flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border ${
+                                    isActive
+                                      ? 'bg-[#FF1717]/[0.06] border-[#FF1717]/30'
+                                      : 'bg-[#11131A] border-white/[0.08]'
+                                  }`}
+                                >
+                                  <div className="flex flex-wrap items-center gap-5">
+                                    <div className="w-16 h-10 rounded-lg bg-[#08090C] border border-white/10 flex items-center justify-center p-1 shrink-0">
+                                      {p.automovel ? (
+                                        <img
+                                          src={resolveStudioCarImage({
+                                            marca: p.automovel.marca ?? '',
+                                            modelo: p.automovel.modelo,
+                                            imageUrl: p.automovel.imageUrl,
+                                          })}
+                                          alt={p.automovel.modelo}
+                                          className="w-full h-full object-contain"
+                                        />
                                       ) : (
-                                        <span className={`text-[10px] font-black uppercase ${p.status === 'APROVADO' ? 'text-emerald-500' : p.status === 'REJEITADO' ? 'text-rose-500' : 'text-slate-500'}`}>
-                                          {new Date(p.dataInicio) < new Date() && (p.status === 'PENDENTE' || p.status === 'PENDENTE_BANCO') ? 'EXPIRADO' : p.status.replace('_', ' ')}
+                                        <Flag size={16} className="text-[#FF1717]" />
+                                      )}
+                                    </div>
+
+                                    <div>
+                                      <p className="text-[10px] font-mono uppercase text-white/45">Veículo / Sessão</p>
+                                      <p className="text-sm font-medium text-white">
+                                        {p.automovel
+                                          ? `${p.automovel.marca ? `${p.automovel.marca} ` : ''}${p.automovel.modelo}`
+                                          : p.tipoServico === 'VISITA_BOX'
+                                            ? 'Visita ao Box & Paddock'
+                                            : 'Sessão de Pista'}
+                                      </p>
+                                    </div>
+
+                                    <div>
+                                      <p className="text-[10px] font-mono uppercase text-white/45">Valor Final</p>
+                                      <div className="flex items-center gap-2">
+                                        <p className="text-sm font-mono font-semibold text-white">
+                                          {formatPrice(p.valorFinal ?? p.valorTotal ?? 0)}
+                                        </p>
+                                        {(p.descontoFidelidade || 0) > 0 && (
+                                          <span className="text-[10px] font-mono text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                                            -{formatPrice(Number(p.descontoFidelidade))}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    <div>
+                                      <p className="text-[10px] font-mono uppercase text-white/45">Situação</p>
+                                      {isActive ? (
+                                        <span className="text-[10px] font-mono uppercase text-[#FF1717] font-semibold">
+                                          AGUARDANDO AUDITORIA
+                                        </span>
+                                      ) : (
+                                        <span
+                                          className={`text-[10px] font-mono uppercase font-semibold ${
+                                            p.status === 'APROVADO'
+                                              ? 'text-emerald-400'
+                                              : p.status === 'REJEITADO'
+                                                ? 'text-rose-400'
+                                                : 'text-white/55'
+                                          }`}
+                                        >
+                                          {new Date(p.dataInicio) < new Date() &&
+                                          (p.status === 'PENDENTE' || p.status === 'PENDENTE_BANCO')
+                                            ? 'EXPIRADO'
+                                            : p.status.replace('_', ' ')}
                                         </span>
                                       )}
                                     </div>
                                   </div>
 
-                                  {/* Os botões voltam a aparecer! (E aceitam o PENDENTE antigo também) */}
                                   {isActive && (
-                                    <div className="flex gap-2">
-                                      <button onClick={() => handleDecisaoCredito(p.id, 'REJEITADO')} className="px-3 py-1.5 rounded-lg border border-rose-500/30 text-rose-500 hover:bg-rose-500 hover:text-white text-xs font-bold transition-all">Reprovar</button>
-                                      <button onClick={() => handleDecisaoCredito(p.id, 'APROVADO')} className="px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-500 text-xs font-bold transition-all">Liberar Crédito</button>
+                                    <div className="flex gap-2 shrink-0">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDecisaoCredito(p.id, 'REJEITADO')}
+                                        className="px-3.5 py-2 rounded-full border border-rose-500/30 text-rose-300 hover:bg-rose-500/20 text-xs font-medium transition-all cursor-pointer"
+                                      >
+                                        Reprovar
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDecisaoCredito(p.id, 'APROVADO')}
+                                        className="px-4 py-2 rounded-full bg-emerald-600 text-white hover:bg-emerald-500 text-xs font-semibold transition-all cursor-pointer"
+                                      >
+                                        Liberar Crédito
+                                      </button>
                                     </div>
                                   )}
                                 </div>
-                               );
+                              );
                             })}
                           </div>
-
                         </div>
                       </motion.div>
                     )}

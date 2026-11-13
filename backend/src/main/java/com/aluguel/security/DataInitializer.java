@@ -118,26 +118,28 @@ public class DataInitializer {
             }
         }
 
-        // 2. Inicializa APENAS 1 usuário no banco: Administrador Executivo (Race Control)
-        Usuario owner = usuarioRepository.findByEmail("admin@apex.com").orElse(null);
-        if (usuarioRepository.count() == 0) {
-            String senhaAdmin = BCrypt.hashpw("123456", BCrypt.gensalt());
-
-            Agente admin = new Agente();
-            admin.setNome("Apex Race Control (Admin)");
-            admin.setEmail("admin@apex.com");
-            admin.setSenha(senhaAdmin);
-            admin.setRole("ROLE_ADMIN");
-            admin.setEndereco("Apex HQ - Race Control Center");
-            admin.setCnpj("99887766000122");
-            owner = agenteRepository.save(admin);
-
-            log.info("Administrador inicializado: admin@apex.com (ROLE_ADMIN).");
-        } else if (owner == null) {
-            owner = usuarioRepository.findAll().iterator().hasNext()
-                    ? usuarioRepository.findAll().iterator().next()
-                    : null;
-        }
+        // 2. Garante contas operacionais (Admin, Empresa e Banco) individualmente por e-mail
+        Usuario owner = ensureAgenteConta(
+                "admin@apex.com",
+                "Apex Race Control (Admin)",
+                "ROLE_ADMIN",
+                "Apex HQ - Race Control Center",
+                "99887766000122"
+        );
+        ensureAgenteConta(
+                "empresa@rentcars.com",
+                "Apex Pitlane Management",
+                "ROLE_EMPRESA",
+                "Av. Interlagos, 1000 - Box 01 - São Paulo, SP",
+                "11222333000144"
+        );
+        ensureAgenteConta(
+                "banco@rentcars.com",
+                "Apex Credit & Risk Bank",
+                "ROLE_BANCO",
+                "Av. Faria Lima, 3500 - São Paulo, SP",
+                "22333444000155"
+        );
 
         // 3. Cadastra os 8 Supercarros únicos, alocando cada um em 3 pistas (= 3 carros distintos por pista)
         if (automovelRepository.count() == 0 && owner != null) {
@@ -178,6 +180,21 @@ public class DataInitializer {
             // Garante sincronização dos 3 circuitos caso os carros já existam de carga anterior
             sincronizarCircuitosExistentes(circuitosMap);
         }
+    }
+
+    private Usuario ensureAgenteConta(String email, String nome, String role, String endereco, String cnpj) {
+        return usuarioRepository.findByEmail(email).orElseGet(() -> {
+            Agente agente = new Agente();
+            agente.setNome(nome);
+            agente.setEmail(email);
+            agente.setSenha(BCrypt.hashpw("123456", BCrypt.gensalt()));
+            agente.setRole(role);
+            agente.setEndereco(endereco);
+            agente.setCnpj(cnpj);
+            Usuario salvo = agenteRepository.save(agente);
+            log.info("Conta operacional inicializada: {} ({}).", email, role);
+            return salvo;
+        });
     }
 
     private void criarSlotSeAusente(Circuito c, LocalDate data, String turno, int total, int ocupadas, BigDecimal taxa) {

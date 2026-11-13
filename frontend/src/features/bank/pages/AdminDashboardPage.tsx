@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import {
   TrendingUp,
   Users,
@@ -13,6 +14,13 @@ import {
   XCircle,
   Server,
   RefreshCw,
+  ArrowUpRight,
+  Wallet,
+  CarFront,
+  FileCheck2,
+  ShieldCheck,
+  Trophy,
+  MapPin,
 } from 'lucide-react';
 import { api } from '@/services/api';
 import { toast } from '@/store/useToastStore';
@@ -105,6 +113,11 @@ export default function AdminDashboardPage() {
   const [sinistroValor, setSinistroValor] = useState('4500');
   const [sinistroMotivo, setSinistroMotivo] = useState('Avaria em para-choque / caixa de brita');
 
+  // Modal de crédito / ajuste de saldo na carteira de um piloto
+  const [creditModalClient, setCreditModalClient] = useState<AdminClientItem | null>(null);
+  const [creditValor, setCreditValor] = useState('5000');
+  const [creditDescricao, setCreditDescricao] = useState('Ajuste Administrativo Apex');
+
   const loadDashboard = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -166,6 +179,31 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const handleCreditBalance = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!creditModalClient) return;
+    const valorNum = Number(creditValor);
+    if (!valorNum || valorNum <= 0) {
+      toast.error('Informe um valor válido maior que zero.');
+      return;
+    }
+    try {
+      setProcessingId(`credit-${creditModalClient.id}`);
+      await api.post('/api/apexpay/deposito', {
+        email: creditModalClient.email,
+        valor: valorNum,
+        descricao: creditDescricao.trim() || 'Ajuste Administrativo Apex',
+      });
+      toast.success(`Crédito de ${formatPrice(valorNum)} lançado para ${creditModalClient.nome}!`);
+      setCreditModalClient(null);
+      await loadDashboard();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Erro ao creditar saldo do piloto.');
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   if (isLoading || !data) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#08090C]">
@@ -205,6 +243,57 @@ export default function AdminDashboardPage() {
             <span>Atualizar Métricas</span>
           </button>
         </header>
+
+        {/* Barra de Atalhos Executivos */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Link
+            to="/pedidos"
+            className="group p-4 rounded-2xl bg-[#11131A] hover:bg-white/[0.04] border border-white/[0.08] hover:border-[#FF1717]/40 transition-all flex items-center justify-between"
+          >
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-[#FF1717]/15 border border-[#FF1717]/30 flex items-center justify-center text-[#FF1717]">
+                <FileCheck2 size={18} />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-white">Gestão de Sessões</p>
+                <p className="text-xs text-white/50">Aprovar, rejeitar ou propor horários</p>
+              </div>
+            </div>
+            <ArrowUpRight size={16} className="text-white/40 group-hover:text-[#FF1717] transition-colors" />
+          </Link>
+
+          <Link
+            to="/frota"
+            className="group p-4 rounded-2xl bg-[#11131A] hover:bg-white/[0.04] border border-white/[0.08] hover:border-[#FF1717]/40 transition-all flex items-center justify-between"
+          >
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-white/[0.06] border border-white/10 flex items-center justify-center text-white">
+                <CarFront size={18} />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-white">Controle de Boxes & Frota</p>
+                <p className="text-xs text-white/50">Cadastrar, editar telemetria e tarifas</p>
+              </div>
+            </div>
+            <ArrowUpRight size={16} className="text-white/40 group-hover:text-[#FF1717] transition-colors" />
+          </Link>
+
+          <Link
+            to="/analises"
+            className="group p-4 rounded-2xl bg-[#11131A] hover:bg-white/[0.04] border border-white/[0.08] hover:border-[#FF1717]/40 transition-all flex items-center justify-between"
+          >
+            <div className="flex items-center gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                <ShieldCheck size={18} />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-white">Auditoria de Risco & Score</p>
+                <p className="text-xs text-white/50">Análise financeira e histórico por CPF</p>
+              </div>
+            </div>
+            <ArrowUpRight size={16} className="text-white/40 group-hover:text-[#FF1717] transition-colors" />
+          </Link>
+        </div>
 
         {/* Grid de KPIs Financeiros & Operacionais */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -356,8 +445,20 @@ export default function AdminDashboardPage() {
                             {c.statusFinanceiro}
                           </span>
                         </td>
-                        <td className="py-3.5 px-4 text-right">
-                          {c.inadimplente ? (
+                        <td className="py-3.5 px-4 text-right whitespace-nowrap space-x-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCreditModalClient(c);
+                              setCreditValor('5000');
+                              setCreditDescricao('Ajuste Administrativo Apex');
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/15 hover:bg-emerald-500/30 border border-emerald-500/30 text-emerald-300 text-[11px] font-medium cursor-pointer transition-colors"
+                          >
+                            <Wallet size={12} />
+                            <span>Creditar Saldo</span>
+                          </button>
+                          {c.inadimplente && (
                             <button
                               type="button"
                               disabled={processingId === `interest-${c.id}`}
@@ -367,8 +468,6 @@ export default function AdminDashboardPage() {
                               <Percent size={12} />
                               <span>Aplicar Juros (0,1%)</span>
                             </button>
-                          ) : (
-                            <span className="text-[11px] text-white/35 font-mono">Sem pendências</span>
                           )}
                         </td>
                       </tr>
@@ -471,7 +570,67 @@ export default function AdminDashboardPage() {
         {/* TAB 3: AUTÓDROMOS, BOXES & FILA */}
         {activeTab === 'infra' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/10 space-y-4">
+            <div className="p-6 rounded-2xl bg-[#11131A] border border-white/[0.08] space-y-4">
+              <h3 className="text-base font-medium text-white flex items-center gap-2">
+                <MapPin size={16} className="text-[#FF1717]" /> Faturamento por Autódromo
+              </h3>
+              {Object.keys(data.faturamentoPorCircuito || {}).length === 0 ? (
+                <p className="text-xs text-white/45 py-4">Ainda não há faturamento registrado por circuito.</p>
+              ) : (
+                <div className="space-y-3">
+                  {(() => {
+                    const entries = Object.entries(data.faturamentoPorCircuito || {}).sort((a, b) => Number(b[1]) - Number(a[1]));
+                    const maxVal = Math.max(...entries.map(([, val]) => Number(val) || 0), 1);
+                    return entries.map(([circuito, valor]) => (
+                      <div key={circuito} className="space-y-1.5">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-white/85 truncate pr-2">{circuito}</span>
+                          <span className="font-mono text-white font-semibold shrink-0">{formatPrice(Number(valor) || 0)}</span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                          <div
+                            className="h-full bg-[#FF1717] rounded-full"
+                            style={{ width: `${Math.min(100, Math.round(((Number(valor) || 0) / maxVal) * 100))}%` }}
+                          />
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 rounded-2xl bg-[#11131A] border border-white/[0.08] space-y-4">
+              <h3 className="text-base font-medium text-white flex items-center gap-2">
+                <Trophy size={16} className="text-[#FF1717]" /> Supercarros Mais Pilotados
+              </h3>
+              {Object.keys(data.supercarrosMaisPilotados || {}).length === 0 ? (
+                <p className="text-xs text-white/45 py-4">Ainda não há sessões suficientes para o ranking da frota.</p>
+              ) : (
+                <div className="space-y-3">
+                  {(() => {
+                    const entries = Object.entries(data.supercarrosMaisPilotados || {}).sort((a, b) => Number(b[1]) - Number(a[1]));
+                    const maxCount = Math.max(...entries.map(([, count]) => Number(count) || 0), 1);
+                    return entries.map(([modelo, count]) => (
+                      <div key={modelo} className="space-y-1.5">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-white/85 truncate pr-2">{modelo}</span>
+                          <span className="font-mono text-white/75 shrink-0">{count} sessão(ões)</span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+                          <div
+                            className="h-full bg-emerald-400 rounded-full"
+                            style={{ width: `${Math.min(100, Math.round(((Number(count) || 0) / maxCount) * 100))}%` }}
+                          />
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 rounded-2xl bg-[#11131A] border border-white/[0.08] space-y-4">
               <h3 className="text-base font-medium text-white">Ocupação de Boxes por Autódromo</h3>
               <div className="space-y-3">
                 {Object.entries(data.ocupacaoBoxesPorAutodromo || {}).map(([id, info]) => (
@@ -493,7 +652,7 @@ export default function AdminDashboardPage() {
               </div>
             </div>
 
-            <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/10 space-y-4">
+            <div className="p-6 rounded-2xl bg-[#11131A] border border-white/[0.08] space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-base font-medium text-white flex items-center gap-2">
                   <Server size={16} className="text-[#FF1717]" /> Mensageria & Virtual Threads Queue
@@ -516,6 +675,69 @@ export default function AdminDashboardPage() {
           </div>
         )}
       </div>
+
+      {/* Modal de Crédito / Ajuste de Saldo Administrativo */}
+      {creditModalClient && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md"
+          onClick={() => setCreditModalClient(null)}
+        >
+          <form
+            onSubmit={handleCreditBalance}
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md p-6 rounded-3xl bg-[#0D0F15] border border-white/15 space-y-4"
+          >
+            <h3 className="text-lg font-medium text-white flex items-center gap-2">
+              <Wallet size={18} className="text-emerald-400" />
+              Creditar Saldo ApexPay
+            </h3>
+            <p className="text-xs text-white/60">
+              Piloto: <strong className="text-white">{creditModalClient.nome}</strong> ({creditModalClient.email}). Saldo atual:{' '}
+              <span className={creditModalClient.saldoCarteira < 0 ? 'text-rose-400 font-mono' : 'text-emerald-400 font-mono'}>
+                {formatPrice(creditModalClient.saldoCarteira)}
+              </span>
+            </p>
+            <div>
+              <label className="text-[11px] text-white/60 block mb-1">Valor do Crédito (R$)</label>
+              <input
+                type="number"
+                min="1"
+                step="50"
+                required
+                value={creditValor}
+                onChange={(e) => setCreditValor(e.target.value)}
+                className="w-full bg-white/5 border border-white/15 focus:border-[#FF1717] px-3.5 py-2.5 rounded-xl text-sm text-white outline-none font-mono"
+              />
+            </div>
+            <div>
+              <label className="text-[11px] text-white/60 block mb-1">Descrição / Motivo</label>
+              <input
+                type="text"
+                required
+                value={creditDescricao}
+                onChange={(e) => setCreditDescricao(e.target.value)}
+                className="w-full bg-white/5 border border-white/15 focus:border-[#FF1717] px-3.5 py-2.5 rounded-xl text-xs text-white outline-none"
+              />
+            </div>
+            <div className="flex gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setCreditModalClient(null)}
+                className="flex-1 py-2.5 rounded-full bg-white/5 border border-white/10 text-xs font-medium cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={processingId === `credit-${creditModalClient.id}`}
+                className="flex-1 py-2.5 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold cursor-pointer"
+              >
+                Confirmar Crédito
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* Modal de Lançamento de Sinistro / Franquia */}
       {sinistroModalBooking && (

@@ -3,8 +3,10 @@ package com.aluguel.controllers;
 import com.aluguel.facades.ApexPayFacade;
 import com.aluguel.models.TransacaoApexPay;
 import io.micronaut.http.HttpResponse;
+import io.micronaut.http.HttpStatus;
 import io.micronaut.http.annotation.*;
 import io.micronaut.security.annotation.Secured;
+import io.micronaut.security.authentication.Authentication;
 import io.micronaut.security.rules.SecurityRule;
 
 import java.math.BigDecimal;
@@ -27,10 +29,15 @@ public class ApexPayController {
      * Atualiza saldo em tempo real e recalcula o Tier de Fidelidade (Standard, Silver, Gold, Apex Black).
      */
     @Post("/deposito")
-    public HttpResponse<?> depositar(@Body Map<String, Object> payload, Principal principal) {
+    public HttpResponse<?> depositar(@Body Map<String, Object> payload, Authentication authentication) {
         try {
-            String email = principal != null ? principal.getName() : (String) payload.get("email");
-            if (payload.get("email") != null && principal != null && (principal.getName().contains("admin") || principal.getName().contains("banco"))) {
+            String email = authentication != null ? authentication.getName() : null;
+            boolean isAdminOrBanco = authentication != null && (
+                    authentication.getRoles().contains("ROLE_ADMIN") ||
+                    authentication.getRoles().contains("ROLE_BANCO")
+            );
+
+            if (payload.get("email") != null && isAdminOrBanco) {
                 // Admin ou Banco podem creditar na conta de outro usuário
                 email = (String) payload.get("email");
             }
@@ -109,11 +116,21 @@ public class ApexPayController {
     }
 
     /**
-     * Endpoint público para consulta rápida de dados da carteira de teste (facilita demonstração a recrutadores).
+     * Endpoint protegido para consulta de dados de carteira.
+     * Permitido apenas para o próprio usuário ou Agentes de Risco / Administradores.
      */
     @Get("/consulta/{email}")
-    @Secured(SecurityRule.IS_ANONYMOUS)
-    public HttpResponse<?> consultarPublico(@PathVariable String email) {
+    @Secured(SecurityRule.IS_AUTHENTICATED)
+    public HttpResponse<?> consultarPublico(@PathVariable String email, Authentication authentication) {
+        if (authentication == null) {
+            return HttpResponse.unauthorized();
+        }
+        boolean isSelf = authentication.getName().equalsIgnoreCase(email);
+        boolean isAdminOrBanco = authentication.getRoles().contains("ROLE_ADMIN") || authentication.getRoles().contains("ROLE_BANCO");
+        if (!isSelf && !isAdminOrBanco) {
+            return HttpResponse.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("message", "Acesso não autorizado aos dados da carteira."));
+        }
         try {
             return HttpResponse.ok(facade.getResumoCarteira(email));
         } catch (Exception e) {

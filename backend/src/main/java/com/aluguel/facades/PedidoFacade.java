@@ -81,8 +81,8 @@ public class PedidoFacade {
         if (pedido.getDataFim() == null || pedido.getDataInicio() == null) {
             throw new IllegalArgumentException("Datas de início e fim são obrigatórias.");
         }
-        if (pedido.getDataFim().isBefore(pedido.getDataInicio())) {
-            throw new IllegalArgumentException("A data de devolução não pode ser anterior à data de retirada.");
+        if (!pedido.getDataFim().isAfter(pedido.getDataInicio())) {
+            throw new IllegalArgumentException("A data de devolução não pode ser anterior ou igual à data de retirada.");
         }
         if (pedido.getDataInicio().toLocalDate().isBefore(LocalDate.now())) {
             throw new IllegalArgumentException("O aluguel não pode iniciar no passado.");
@@ -141,11 +141,12 @@ public class PedidoFacade {
         boolean exigePilotagem = "TRACK_EXPERIENCE".equalsIgnoreCase(servico) || "PACOTE_VIP".equalsIgnoreCase(servico);
 
         if (exigePilotagem) {
-            if (cliente.getDataNascimento() != null) {
-                long idade = ChronoUnit.YEARS.between(cliente.getDataNascimento(), LocalDate.now());
-                if (idade < 21) {
-                    throw new IllegalArgumentException("Idade mínima de 21 anos exigida para pilotagem de supercarros em autódromos internacionais (Serviço: " + servico + ").");
-                }
+            if (cliente.getDataNascimento() == null) {
+                throw new IllegalArgumentException("Data de nascimento obrigatória para validação de idade mínima de pilotagem (Serviço: " + servico + ").");
+            }
+            long idade = ChronoUnit.YEARS.between(cliente.getDataNascimento(), LocalDate.now());
+            if (idade < 21) {
+                throw new IllegalArgumentException("Idade mínima de 21 anos exigida para pilotagem de supercarros em autódromos internacionais (Serviço: " + servico + ").");
             }
 
             String cnh = cliente.getCnhNumero();
@@ -263,12 +264,27 @@ public class PedidoFacade {
             if (!"PENDENTE_EMPRESA".equals(pedido.getStatus())) {
                 throw new IllegalArgumentException("Este pedido não está aguardando avaliação da sua empresa.");
             }
-            pedido.setStatus("APROVADO".equals(novoStatus) ? "PENDENTE_BANCO" : "REJEITADO");
+            if ("APROVADO".equals(novoStatus)) {
+                pedido.setStatus("PENDENTE_BANCO");
+            } else {
+                pedido.setStatus("REJEITADO");
+                liberarSlotSePresente(pedido);
+                estornarSeNecessario(pedido, "Sessão rejeitada pela empresa locadora");
+            }
         } else if ("ROLE_BANCO".equals(usuario.getRole()) || "ROLE_ADMIN".equals(usuario.getRole())) {
+            if ("ROLE_BANCO".equals(usuario.getRole()) && !"PENDENTE_BANCO".equals(pedido.getStatus())) {
+                throw new IllegalArgumentException("Este pedido não está disponível para homologação bancária. Ele deve ser aprovado pela empresa antes.");
+            }
             if (!"PENDENTE_BANCO".equals(pedido.getStatus()) && !"PENDENTE_EMPRESA".equals(pedido.getStatus())) {
                 throw new IllegalArgumentException("Este pedido não está disponível para homologação.");
             }
-            pedido.setStatus("APROVADO".equals(novoStatus) ? "APROVADO" : "REJEITADO");
+            if ("APROVADO".equals(novoStatus)) {
+                pedido.setStatus("APROVADO");
+            } else {
+                pedido.setStatus("REJEITADO");
+                liberarSlotSePresente(pedido);
+                estornarSeNecessario(pedido, "Sessão rejeitada na homologação de crédito");
+            }
         } else {
             throw new IllegalArgumentException("Perfil não autorizado para avaliar pedidos.");
         }
@@ -338,10 +354,35 @@ public class PedidoFacade {
 
         long dias = ChronoUnit.DAYS.between(pedido.getDataInicio().toLocalDate(), pedido.getDataFim().toLocalDate());
         if (dias <= 0) dias = 1;
-        if (pedido.getAutomovel() != null) {
+
+        BigDecimal valorBase;
+        String servico = pedido.getTipoServico() != null ? pedido.getTipoServico() : "TRACK_EXPERIENCE";
+        boolean isVisitaBox = "VISITA_BOX".equalsIgnoreCase(servico);
+        if (isVisitaBox) {
+            valorBase = new BigDecimal("890.00");
+        } else if (pedido.getAutomovel() != null) {
             BigDecimal precoDiaria = pedido.getAutomovel().getPrecoPorDia() != null ? pedido.getAutomovel().getPrecoPorDia() : BigDecimal.ZERO;
-            pedido.setValorTotal(precoDiaria.multiply(BigDecimal.valueOf(dias)));
+            BigDecimal multiplicadorServico = switch (servico.toUpperCase()) {
+                case "FAST_LAP" -> new BigDecimal("0.55");
+                case "PACOTE_VIP" -> new BigDecimal("1.70");
+                default -> BigDecimal.ONE;
+            };
+            valorBase = precoDiaria.multiply(BigDecimal.valueOf(dias)).multiply(multiplicadorServico).setScale(2, RoundingMode.HALF_UP);
+        } else {
+            valorBase = pedido.getValorTotal() != null ? pedido.getValorTotal() : BigDecimal.ZERO;
         }
+
+        if (pedido.getTrackSlot() != null && pedido.getTrackSlot().getTaxaAdicionalTurno() != null) {
+            valorBase = valorBase.add(pedido.getTrackSlot().getTaxaAdicionalTurno());
+        }
+
+        BigDecimal fatorDesconto = (pedido.getCliente() != null) ? pedido.getCliente().getFatorDesconto() : BigDecimal.ZERO;
+        BigDecimal desconto = valorBase.multiply(fatorDesconto).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal valorFinal = valorBase.subtract(desconto);
+
+        pedido.setValorTotal(valorBase);
+        pedido.setDescontoFidelidade(desconto);
+        pedido.setValorFinal(valorFinal);
 
         pedido.setStatus("REVISAO_CLIENTE");
 
@@ -360,7 +401,13 @@ public class PedidoFacade {
             throw new IllegalArgumentException("Este pedido não está aguardando sua revisão.");
         }
 
-        pedido.setStatus(aceito ? "PENDENTE_BANCO" : "CANCELADO");
+        if (aceito) {
+            pedido.setStatus("PENDENTE_BANCO");
+        } else {
+            pedido.setStatus("CANCELADO");
+            liberarSlotSePresente(pedido);
+            estornarSeNecessario(pedido, "Contraproposta de data recusada pelo piloto");
+        }
         return pedidoRepository.update(pedido);
     }
 
@@ -377,6 +424,30 @@ public class PedidoFacade {
         }
 
         pedido.setStatus("CANCELADO");
+        liberarSlotSePresente(pedido);
+        estornarSeNecessario(pedido, "Sessão cancelada a pedido do piloto");
         return pedidoRepository.update(pedido);
+    }
+
+    private void liberarSlotSePresente(Pedido pedido) {
+        if (pedido.getTrackSlot() != null) {
+            pedido.getTrackSlot().liberarVaga();
+            if (trackSlotRepository != null) {
+                trackSlotRepository.update(pedido.getTrackSlot());
+            }
+        }
+    }
+
+    private void estornarSeNecessario(Pedido pedido, String motivo) {
+        if (apexPayFacade != null && pedido.getCliente() != null) {
+            String pStatus = pedido.getPagamentoStatus();
+            if ("PAGO_CARTEIRA".equalsIgnoreCase(pStatus) || "DEBITO_ABERTO".equalsIgnoreCase(pStatus)) {
+                BigDecimal valor = pedido.getValorFinal() != null ? pedido.getValorFinal() : pedido.getValorTotal();
+                if (valor != null && valor.compareTo(BigDecimal.ZERO) > 0) {
+                    apexPayFacade.estornarReserva(pedido.getCliente(), valor, pedido.getTrackingCode(), motivo);
+                    pedido.setPagamentoStatus("ESTORNADO");
+                }
+            }
+        }
     }
 }

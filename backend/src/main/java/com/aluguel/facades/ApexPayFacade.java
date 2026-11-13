@@ -157,6 +157,34 @@ public class ApexPayFacade {
         return transacaoRepository.save(transacao);
     }
 
+    @Transactional
+    public TransacaoApexPay estornarReserva(Usuario usuario, BigDecimal valorLiquido, String trackingCode, String motivo) {
+        if (valorLiquido == null || valorLiquido.compareTo(BigDecimal.ZERO) <= 0) {
+            return null;
+        }
+
+        BigDecimal saldoAtual = usuario.getSaldoCarteira() != null ? usuario.getSaldoCarteira() : BigDecimal.ZERO;
+        usuario.setSaldoCarteira(saldoAtual.add(valorLiquido));
+
+        if (usuario.getSaldoCarteira().compareTo(BigDecimal.ZERO) >= 0) {
+            usuario.setStatusFinanceiro("REGULAR");
+        }
+        usuarioRepository.update(usuario);
+
+        String desc = (motivo != null && !motivo.isBlank())
+                ? motivo
+                : "Estorno de Sessão Cancelada / Rejeitada [" + trackingCode + "]";
+
+        TransacaoApexPay transacao = new TransacaoApexPay(
+                usuario,
+                "ESTORNO",
+                valorLiquido,
+                desc,
+                trackingCode
+        );
+        return transacaoRepository.save(transacao);
+    }
+
     public Map<String, Object> getResumoCarteira(String email) {
         Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("Usuário não encontrado: " + email));

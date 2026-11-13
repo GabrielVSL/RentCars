@@ -62,7 +62,7 @@ export default function ApexPayPage() {
       const [saldoRes, extratoRes, perfilRes] = await Promise.all([
         api.get('/api/apexpay/saldo'),
         api.get('/api/apexpay/extrato'),
-        api.get('/api/usuarios/me'),
+        api.get('/api/usuarios/me').catch(() => ({ data: null })),
       ]);
       setWallet(saldoRes.data);
       setExtrato(Array.isArray(extratoRes.data) ? extratoRes.data : []);

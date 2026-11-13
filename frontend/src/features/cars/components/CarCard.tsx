@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { ArrowUpRight } from 'lucide-react';
 import { Automovel } from './BookingModal';
 import { useCurrencyStore } from '@/store/useCurrencyStore';
+import { useAuthStore } from '@/store/useAuthStore';
 import { getCarDisplaySpecs, resolveStudioCarImage } from '@/lib/carPresentation';
 
 interface CarCardProps {
@@ -27,6 +28,9 @@ const formatShortCircuitName = (name: string) =>
 
 export function CarCard({ carro, index, onSelect }: CarCardProps) {
   const { formatPrice } = useCurrencyStore();
+  const { user } = useAuthStore();
+  const isStaff = Boolean(user && user.role !== 'CLIENTE');
+  const staffTarget = user?.role === 'BANCO' ? '/analises' : '/frota';
   const specs = getCarDisplaySpecs(carro);
   const imageSrc = resolveStudioCarImage(carro);
 
@@ -124,13 +128,22 @@ export function CarCard({ carro, index, onSelect }: CarCardProps) {
             <ArrowUpRight size={14} />
           </Link>
 
-          <button
-            type="button"
-            onClick={() => onSelect(carro)}
-            className="bg-[#F3F4F6] text-[#08090C] hover:bg-[#FF1717] hover:text-white text-xs font-medium px-6 py-2.5 rounded-full transition-all duration-200 cursor-pointer active:scale-[0.98]"
-          >
-            Reservar Sessão
-          </button>
+          {isStaff ? (
+            <Link
+              to={staffTarget}
+              className="bg-white/10 text-white hover:bg-[#FF1717] border border-white/15 hover:border-[#FF1717] text-xs font-medium px-6 py-2.5 rounded-full transition-all duration-200 active:scale-[0.98]"
+            >
+              {user?.role === 'BANCO' ? 'Painel de Auditoria' : 'Gerenciar nos Boxes'}
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={() => onSelect(carro)}
+              className="bg-[#F3F4F6] text-[#08090C] hover:bg-[#FF1717] hover:text-white text-xs font-medium px-6 py-2.5 rounded-full transition-all duration-200 cursor-pointer active:scale-[0.98]"
+            >
+              Reservar Sessão
+            </button>
+          )}
         </div>
       </div>
     </motion.article>

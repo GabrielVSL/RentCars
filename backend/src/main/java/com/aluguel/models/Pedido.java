@@ -1,5 +1,6 @@
 package com.aluguel.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.micronaut.serde.annotation.Serdeable;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
@@ -17,6 +18,7 @@ public class Pedido {
 
     @ManyToOne
     @JoinColumn(name = "cliente_id", nullable = false)
+    @JsonIgnoreProperties({"senha", "saldoCarteira", "totalDepositadoHistorico"})
     private Cliente cliente;
 
     // Opcional quando o serviço for apenas Visita ao Box (VISITA_BOX)
@@ -26,6 +28,7 @@ public class Pedido {
 
     @ManyToOne
     @JoinColumn(name = "agente_id")
+    @JsonIgnoreProperties({"senha", "saldoCarteira", "totalDepositadoHistorico"})
     private Agente agenteAvaliador;
 
     @Column(nullable = false)

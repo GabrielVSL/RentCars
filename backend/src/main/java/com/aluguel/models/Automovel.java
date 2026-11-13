@@ -1,5 +1,6 @@
 package com.aluguel.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.micronaut.serde.annotation.Serdeable;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
@@ -38,6 +39,7 @@ public class Automovel {
 
     @ManyToOne
     @JoinColumn(name = "proprietario_id", nullable = false)
+    @JsonIgnoreProperties({"senha", "saldoCarteira", "totalDepositadoHistorico", "statusFinanceiro", "rendimentos", "cpf", "rg", "cnhNumero", "cnhCategoria", "dataNascimento"})
     private Usuario proprietario;
 
     // --- 🏎️ CAMPOS DO APEX TRACK EXPERIENCE ---

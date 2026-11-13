@@ -165,28 +165,53 @@ export default function Header({ transparent = false }: HeaderProps) {
     navigate('/cadastro', { state: { from: location.pathname } });
   };
 
-  const linkClass = "text-sm font-medium tracking-normal text-white/75 hover:text-white transition-colors duration-200";
+  const linkClass = "text-sm font-medium tracking-normal text-white/75 hover:text-white transition-colors duration-200 whitespace-nowrap";
 
   const renderNavLinks = (customClass?: string) => {
-    const cls = customClass || linkClass;
+    const baseCls = customClass || linkClass;
+    const itemCls = (path: string) =>
+      `${baseCls} ${location.pathname === path ? '!text-white font-semibold' : ''}`.trim();
+
+    if (user?.role === 'ADMIN') {
+      return (
+        <>
+          <Link to="/admin" className={itemCls('/admin')}>Painel Admin</Link>
+          <Link to="/pedidos" className={itemCls('/pedidos')}>Sessões</Link>
+          <Link to="/frota" className={itemCls('/frota')}>Boxes & Frota</Link>
+          <Link to="/analises" className={itemCls('/analises')}>Auditoria</Link>
+          <Link to="/" className={itemCls('/')}>Vitrine</Link>
+        </>
+      );
+    }
+
+    if (user?.role === 'EMPRESA') {
+      return (
+        <>
+          <Link to="/pedidos" className={itemCls('/pedidos')}>Sessões</Link>
+          <Link to="/frota" className={itemCls('/frota')}>Boxes & Frota</Link>
+          <Link to="/" className={itemCls('/')}>Vitrine</Link>
+        </>
+      );
+    }
+
+    if (user?.role === 'BANCO') {
+      return (
+        <>
+          <Link to="/analises" className={itemCls('/analises')}>Auditoria</Link>
+          <Link to="/pedidos" className={itemCls('/pedidos')}>Sessões</Link>
+          <Link to="/" className={itemCls('/')}>Vitrine</Link>
+        </>
+      );
+    }
+
     return (
       <>
-        <Link to="/" className={cls}>Início</Link>
-        <Link to="/pistas" className={cls}>Pistas</Link>
-        {(!user || user.role === 'CLIENTE' || user.role === 'ADMIN') && (
-          <Link to="/cars" className={cls}>Frota</Link>
-        )}
-        <a href="/#como-funciona" className={cls}>Como Funciona</a>
-
-        {user?.role === 'CLIENTE' && <Link to="/apexpay" className={cls}>ApexPay</Link>}
-        {user?.role === 'CLIENTE' && <Link to="/meus-alugueis" className={cls}>Minhas Sessões</Link>}
-
-        {user?.role === 'ADMIN' && <Link to="/admin" className={cls}>Painel Admin</Link>}
-        {(user?.role === 'ADMIN' || user?.role === 'EMPRESA' || user?.role === 'BANCO') && (
-          <Link to="/pedidos" className={cls}>Sessões</Link>
-        )}
-        {(user?.role === 'ADMIN' || user?.role === 'EMPRESA') && <Link to="/frota" className={cls}>Boxes</Link>}
-        {user?.role === 'BANCO' && <Link to="/analises" className={cls}>Auditoria</Link>}
+        <Link to="/" className={itemCls('/')}>Início</Link>
+        <Link to="/pistas" className={itemCls('/pistas')}>Pistas</Link>
+        <Link to="/cars" className={itemCls('/cars')}>Frota</Link>
+        <a href="/#como-funciona" className={baseCls}>Como Funciona</a>
+        {user?.role === 'CLIENTE' && <Link to="/meus-alugueis" className={itemCls('/meus-alugueis')}>Minhas Sessões</Link>}
+        {user?.role === 'CLIENTE' && <Link to="/apexpay" className={itemCls('/apexpay')}>ApexPay</Link>}
       </>
     );
   };
@@ -271,7 +296,7 @@ export default function Header({ transparent = false }: HeaderProps) {
                 duration: 0.65,
                 ease: [0.16, 1, 0.3, 1],
               }}
-              className="hidden lg:flex items-center gap-8 font-sans absolute top-1/2 pointer-events-auto"
+              className="hidden lg:flex items-center gap-5 xl:gap-7 whitespace-nowrap font-sans absolute top-1/2 pointer-events-auto"
             >
               {renderNavLinks()}
             </motion.nav>

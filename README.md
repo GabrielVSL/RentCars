@@ -187,32 +187,32 @@ O sistema segue o padrão arquitetural **Cliente-Servidor via API RESTful**, div
 
 ### Pré-requisitos
 
-- Java 17+
+- Java 21+
 - Node.js 18+ (para o Frontend)
-- Maven 3.8+
+- Gradle (ou utilize o Gradle Wrapper `./gradlew` / `gradlew.bat` já incluído)
 
 ### Executando o Backend (Micronaut)
 
 ```bash
-# Clone o repositório
-git clone https://github.com/seu-usuario/seu-repositorio.git
-
 # Acesse o diretório do backend
-cd seu-repositorio/backend
+cd backend
 
-# Instale as dependências e inicie o servidor
-./mvnw mn:run
+# No Linux/macOS:
+./gradlew run
+
+# No Windows (PowerShell / CMD):
+.\gradlew.bat run
 ```
 
 A API estará disponível em `http://localhost:8080`.
 
-### Executando o Frontend (React)
+### Executando o Frontend (React + Vite)
 
 ```bash
 # Acesse o diretório do frontend
-cd seu-repositorio/frontend
+cd frontend
 
-# Instale as dependências
+# Instale as dependências (se ainda não instalou)
 npm install
 
 # Inicie o servidor de desenvolvimento
@@ -220,3 +220,37 @@ npm run dev
 ```
 
 A aplicação web estará disponível em `http://localhost:5173`.
+
+---
+
+## 🌐 Deploy em Produção (Gratuito e Profissional)
+
+O projeto foi preparado com suporte a **Containerização Docker Multi-Stage**, **CORS Dinâmico** e **Rewrite SPA**, permitindo deploy em plataformas modernas e gratuitas:
+
+### 1. Banco de Dados (PostgreSQL)
+- **Supabase** (Recomendado para portfólio) ou **Neon.tech**:
+  1. Crie um projeto gratuito PostgreSQL.
+  2. Copie a Connection String JDBC (modo `sslmode=require`).
+
+### 2. Backend (Micronaut no Java 21)
+- **Koyeb** ou **Render** (via Dockerfile):
+  1. Conecte o repositório GitHub.
+  2. Configure:
+     - **Root Directory**: `backend`
+     - **Build Type**: `Dockerfile` (já configurado em `backend/Dockerfile` com imagem Alpine ultra-leve ~140MB).
+  3. Adicione as Variáveis de Ambiente:
+     - `JDBC_URL`: URL JDBC do PostgreSQL (ex: `jdbc:postgresql://host:5432/postgres?sslmode=require`).
+     - `DB_USER`: Usuário do banco.
+     - `DB_PASSWORD`: Senha do banco.
+     - `JWT_SECRET`: Chave secreta de 256 bits.
+     - `CORS_ALLOWED_ORIGINS`: URL do seu frontend na Vercel (ex: `https://meu-rentcars.vercel.app`).
+
+### 3. Frontend (React + Vite)
+- **Vercel**:
+  1. Conecte o repositório GitHub.
+  2. Configure:
+     - **Root Directory**: `frontend`
+     - **Framework Preset**: `Vite`
+  3. Adicione a Variável de Ambiente:
+     - `VITE_API_URL`: URL pública do seu backend (ex: `https://seu-backend.koyeb.app` ou `https://seu-backend.onrender.com`).
+  4. O arquivo `frontend/vercel.json` já está configurado para garantir o roteamento de rotas diretas (SPA).

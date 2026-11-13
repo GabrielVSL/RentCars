@@ -80,7 +80,7 @@ export default function App() {
           <Route
             path="/analises"
             element={
-              <ProtectedRoute allowedRoles={['BANCO']}>
+              <ProtectedRoute allowedRoles={['BANCO', 'ADMIN']}>
                 <PageTransition><AnalisesPage /></PageTransition>
               </ProtectedRoute>
             }
@@ -90,7 +90,7 @@ export default function App() {
           <Route
             path="/apexpay"
             element={
-              <ProtectedRoute allowedRoles={['CLIENTE', 'ADMIN']}>
+              <ProtectedRoute allowedRoles={['CLIENTE']}>
                 <PageTransition><ApexPayPage /></PageTransition>
               </ProtectedRoute>
             }

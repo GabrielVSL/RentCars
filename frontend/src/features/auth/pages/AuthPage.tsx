@@ -164,10 +164,21 @@ export default function AuthPage({ initialMode }: AuthPageProps) {
       );
 
       const fromState = (location.state as { from?: string } | null)?.from;
-      if (fromState && fromState !== '/login' && fromState !== '/cadastro') {
+      const adminRoutes = ['/admin', '/pedidos', '/frota', '/analises'];
+      const empresaRoutes = ['/pedidos', '/frota'];
+      const bancoRoutes = ['/analises', '/pedidos'];
+
+      if (userRole === 'ADMIN') {
+        const target = fromState && adminRoutes.includes(fromState) ? fromState : '/admin';
+        navigate(target, { replace: true });
+      } else if (userRole === 'EMPRESA') {
+        const target = fromState && empresaRoutes.includes(fromState) ? fromState : '/pedidos';
+        navigate(target, { replace: true });
+      } else if (userRole === 'BANCO') {
+        const target = fromState && bancoRoutes.includes(fromState) ? fromState : '/analises';
+        navigate(target, { replace: true });
+      } else if (fromState && fromState !== '/login' && fromState !== '/cadastro') {
         navigate(fromState, { replace: true });
-      } else if (userRole === 'ADMIN') {
-        navigate('/admin', { replace: true });
       } else {
         navigate('/', { replace: true });
       }
@@ -182,9 +193,23 @@ export default function AuthPage({ initialMode }: AuthPageProps) {
     setIsLoading(true);
     setServerError(null);
     try {
-      const { confirmPassword, ...cleanData } = data;
+      const { confirmPassword: _confirmPassword, ...cleanData } = data;
+      const cleanRendimentos = (cleanData.rendimentos || [])
+        .filter(
+          (r) =>
+            r &&
+            r.empregadora &&
+            r.empregadora.trim().length > 0 &&
+            Number(r.valor) > 0
+        )
+        .map((r) => ({
+          empregadora: r.empregadora!.trim(),
+          valor: Number(r.valor),
+        }));
+
       const payload = {
         ...cleanData,
+        rendimentos: cleanRendimentos,
         role: 'CLIENTE',
         cpf: cleanData.cpf?.replace(/\D/g, ''),
       };
@@ -675,17 +700,23 @@ export default function AuthPage({ initialMode }: AuthPageProps) {
                                   placeholder="R$"
                                   className="w-24 bg-white/95 text-[#08090C] placeholder:text-slate-400 rounded-full px-3.5 py-2 text-xs font-medium outline-none focus:ring-2 focus:ring-[#FF1717]/80"
                                 />
-                                {fields.length > 1 && (
+                                {fields.length > 0 && (
                                   <button
                                     type="button"
                                     onClick={() => remove(index)}
                                     className="text-white/55 hover:text-rose-400 p-1 shrink-0 transition-colors cursor-pointer"
+                                    title="Remover fonte de renda"
                                   >
                                     <Trash2 size={14} />
                                   </button>
                                 )}
                               </div>
                             ))}
+                            {fields.length === 0 && (
+                              <p className="text-[11px] text-white/45 italic py-1 pl-1">
+                                Nenhum rendimento informado (opcional).
+                              </p>
+                            )}
                           </div>
                         </div>
 

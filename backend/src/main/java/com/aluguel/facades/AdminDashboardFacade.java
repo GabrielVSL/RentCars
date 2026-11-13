@@ -68,6 +68,7 @@ public class AdminDashboardFacade {
         BigDecimal totalJuros = StreamSupport.stream(transacaoRepository.findAll().spliterator(), false)
                 .filter(t -> "JUROS_ATRASO".equals(t.getTipo()))
                 .map(TransacaoApexPay::getValor)
+                .filter(Objects::nonNull)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         // Lucro líquido estimado (receita confirmada - 32% custo de pista/pneus/combustível + juros + sinistros)
@@ -105,17 +106,22 @@ public class AdminDashboardFacade {
         Map<String, Map<String, Object>> ocupacaoBoxes = new HashMap<>();
 
         for (TrackSlot slot : todosSlots) {
+            if (slot.getCircuito() == null || slot.getCircuito().getId() == null) {
+                continue;
+            }
             String circuitoId = slot.getCircuito().getId();
+            int vagasTotaisSlot = slot.getVagasTotais() != null ? slot.getVagasTotais() : 0;
+            int vagasOcupadasSlot = slot.getVagasOcupadas() != null ? slot.getVagasOcupadas() : 0;
             ocupacaoBoxes.compute(circuitoId, (k, v) -> {
                 if (v == null) {
                     Map<String, Object> map = new HashMap<>();
-                    map.put("circuitoNome", slot.getCircuito().getNome());
+                    map.put("circuitoNome", slot.getCircuito().getNome() != null ? slot.getCircuito().getNome() : circuitoId);
                     map.put("totalVagas", 0);
                     map.put("totalOcupadas", 0);
                     v = map;
                 }
-                int tv = (int) v.get("totalVagas") + slot.getVagasTotais();
-                int to = (int) v.get("totalOcupadas") + slot.getVagasOcupadas();
+                int tv = (int) v.get("totalVagas") + vagasTotaisSlot;
+                int to = (int) v.get("totalOcupadas") + vagasOcupadasSlot;
                 v.put("totalVagas", tv);
                 v.put("totalOcupadas", to);
                 v.put("taxaOcupacaoPercentual", tv > 0 ? Math.round((to * 100.0) / tv) : 0);
@@ -193,7 +199,13 @@ public class AdminDashboardFacade {
                     item.put("clienteInadimplente", p.getCliente() != null && p.getCliente().isInadimplente());
                     item.put("automovelNome", p.getAutomovel() != null ? p.getAutomovel().getMarca() + " " + p.getAutomovel().getModelo() : "Paddock / Sem Veículo");
                     item.put("circuitoNome", resolverNomeCircuito(p));
-                    item.put("slotData", p.getTrackSlot() != null ? p.getTrackSlot().getData().toString() : p.getDataInicio().toLocalDate().toString());
+                    String slotData = "Data a definir";
+                    if (p.getTrackSlot() != null && p.getTrackSlot().getData() != null) {
+                        slotData = p.getTrackSlot().getData().toString();
+                    } else if (p.getDataInicio() != null) {
+                        slotData = p.getDataInicio().toLocalDate().toString();
+                    }
+                    item.put("slotData", slotData);
                     item.put("slotTurno", p.getTrackSlot() != null ? p.getTrackSlot().getTurno() : "FULL_DAY");
                     item.put("tipoServico", p.getTipoServico());
                     item.put("valorTotal", p.getValorTotal());

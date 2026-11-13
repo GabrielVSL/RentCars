@@ -7,6 +7,10 @@ export const carSchema = z.object({
   ano: z.number().min(1900, 'Ano inválido').max(new Date().getFullYear() + 1, 'Ano inválido'),
   placa: z.string().min(7, 'Placa inválida').max(8, 'Placa inválida'),
   precoPorDia: z.number().min(1, 'O preço deve ser maior que zero'),
+  categoria: z.string().optional(),
+  potenciaCv: z.number().int().min(100, 'Potência inválida').optional().or(z.nan()),
+  aceleracao0a100: z.string().optional(),
+  velocidadeMaxima: z.string().optional(),
 });
 
 export type CarFormInputs = z.infer<typeof carSchema>;

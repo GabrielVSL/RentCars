@@ -20,8 +20,23 @@ interface Automovel {
   placa: string;
   imageUrl?: string;
   precoPorDia: number;
+  categoria?: string;
+  potenciaCv?: number;
+  aceleracao0a100?: string;
+  velocidadeMaxima?: string;
   circuitosDisponiveis?: { id: string; nome: string }[];
 }
+
+const STUDIO_PRESETS = [
+  { label: 'Porsche GT3 RS', url: '/cars/porsche-studio.webp' },
+  { label: 'BMW M4 Comp', url: '/cars/bmw-studio.webp' },
+  { label: 'AMG GT Track', url: '/cars/amg-studio.webp' },
+  { label: 'Audi R8 V10', url: '/cars/audi-studio.webp' },
+  { label: 'Cayman GT4 RS', url: '/cars/cayman-studio.webp' },
+  { label: 'BMW M8 Comp', url: '/cars/m8-studio.webp' },
+  { label: 'AMG Black Series', url: '/cars/amg-bs-studio.webp' },
+  { label: 'Audi RS e-tron GT', url: '/cars/etrongt-studio.webp' },
+];
 
 export default function FrotaPage() {
   const { formatPrice } = useCurrencyStore();
@@ -90,7 +105,11 @@ export default function FrotaPage() {
   const onSubmit = async (data: CarFormInputs) => {
     try {
       setIsSubmitting(true);
-      const payload = { ...data, imageUrl: previewImage };
+      const payload = {
+        ...data,
+        potenciaCv: Number.isNaN(data.potenciaCv) ? undefined : data.potenciaCv,
+        imageUrl: previewImage || undefined,
+      };
 
       if (carroEditando) {
         await api.put(`/api/automoveis/${carroEditando.id}`, payload);
@@ -131,6 +150,10 @@ export default function FrotaPage() {
       ano: carro.ano,
       placa: carro.placa,
       precoPorDia: carro.precoPorDia,
+      categoria: carro.categoria || 'GT3',
+      potenciaCv: carro.potenciaCv || 525,
+      aceleracao0a100: carro.aceleracao0a100 || '3.2s',
+      velocidadeMaxima: carro.velocidadeMaxima || '296 km/h',
     });
     setIsModalOpen(true);
   };
@@ -146,6 +169,10 @@ export default function FrotaPage() {
       ano: new Date().getFullYear(),
       placa: '',
       precoPorDia: 0,
+      categoria: 'GT3',
+      potenciaCv: 525,
+      aceleracao0a100: '3.2s',
+      velocidadeMaxima: '296 km/h',
     });
   };
 
@@ -335,10 +362,10 @@ export default function FrotaPage() {
                 </div>
 
                 <div className="p-7 overflow-y-auto custom-scrollbar">
-                  {/* Área de Upload */}
-                  <div className="mb-6">
-                    <label className="block text-[11px] font-mono uppercase tracking-wider text-white/55 mb-2">
-                      Imagem Studio (URL / Cloudinary)
+                  {/* Área de Imagem Studio: URL direta + Presets + Upload */}
+                  <div className="mb-6 space-y-3">
+                    <label className="block text-[11px] font-mono uppercase tracking-wider text-white/55">
+                      Imagem Studio (URL, Preset ou Upload)
                     </label>
                     <div
                       onClick={() => fileInputRef.current?.click()}
@@ -357,7 +384,7 @@ export default function FrotaPage() {
                         <>
                           <UploadCloud className="text-white/40 mb-2" size={26} />
                           <p className="text-xs font-medium text-white/75">
-                            Clique para enviar uma foto transparente (.webp / .png)
+                            Clique para enviar foto (.webp / .png) ou selecione um preset abaixo
                           </p>
                         </>
                       )}
@@ -369,6 +396,29 @@ export default function FrotaPage() {
                       accept="image/*"
                       className="hidden"
                     />
+                    <input
+                      type="text"
+                      value={previewImage || ''}
+                      onChange={(e) => setPreviewImage(e.target.value || null)}
+                      placeholder="/cars/porsche-studio.webp ou https://..."
+                      className={inputClass}
+                    />
+                    <div className="flex flex-wrap gap-1.5">
+                      {STUDIO_PRESETS.map((preset) => (
+                        <button
+                          key={preset.url}
+                          type="button"
+                          onClick={() => setPreviewImage(preset.url)}
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-mono border transition-colors cursor-pointer ${
+                            previewImage === preset.url
+                              ? 'bg-[#FF1717] text-white border-[#FF1717]'
+                              : 'bg-white/[0.03] text-white/60 border-white/10 hover:text-white'
+                          }`}
+                        >
+                          {preset.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
                   {/* Formulário */}
@@ -407,6 +457,50 @@ export default function FrotaPage() {
                         Placa
                       </label>
                       <input {...register('placa')} className={inputClass} />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-mono uppercase tracking-wider text-white/55 mb-1.5">
+                        Categoria Track
+                      </label>
+                      <select {...register('categoria')} className={`${inputClass} bg-[#0D1017]`}>
+                        <option value="GT3">GT3</option>
+                        <option value="GT2">GT2</option>
+                        <option value="GT4">GT4</option>
+                        <option value="SUPERCAR">SUPERCAR</option>
+                        <option value="HYPERCAR">HYPERCAR</option>
+                        <option value="ELECTRIC">ELECTRIC</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-mono uppercase tracking-wider text-white/55 mb-1.5">
+                        Potência (cv)
+                      </label>
+                      <input
+                        type="number"
+                        {...register('potenciaCv', { valueAsNumber: true })}
+                        placeholder="Ex: 525"
+                        className={inputClass}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-mono uppercase tracking-wider text-white/55 mb-1.5">
+                        0–100 km/h
+                      </label>
+                      <input
+                        {...register('aceleracao0a100')}
+                        placeholder="Ex: 3.2s"
+                        className={inputClass}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-mono uppercase tracking-wider text-white/55 mb-1.5">
+                        Velocidade Máxima
+                      </label>
+                      <input
+                        {...register('velocidadeMaxima')}
+                        placeholder="Ex: 296 km/h"
+                        className={inputClass}
+                      />
                     </div>
                     <div className="md:col-span-2">
                       <label className="block text-[11px] font-mono uppercase tracking-wider text-white/55 mb-1.5">

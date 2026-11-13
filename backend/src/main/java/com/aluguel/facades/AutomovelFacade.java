@@ -63,6 +63,10 @@ public class AutomovelFacade {
         carro.setMatricula(dadosNovos.getMatricula());
         carro.setImageUrl(dadosNovos.getImageUrl());
         carro.setPrecoPorDia(dadosNovos.getPrecoPorDia());
+        if (dadosNovos.getPotenciaCv() != null) carro.setPotenciaCv(dadosNovos.getPotenciaCv());
+        if (dadosNovos.getAceleracao0a100() != null) carro.setAceleracao0a100(dadosNovos.getAceleracao0a100());
+        if (dadosNovos.getVelocidadeMaxima() != null) carro.setVelocidadeMaxima(dadosNovos.getVelocidadeMaxima());
+        if (dadosNovos.getCategoria() != null) carro.setCategoria(dadosNovos.getCategoria());
 
         return automovelRepository.update(carro);
     }

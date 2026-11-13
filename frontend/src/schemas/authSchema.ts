@@ -8,8 +8,8 @@ export const loginSchema = z.object({
 export type LoginFormInputs = z.infer<typeof loginSchema>;
 
 const rendimentoSchema = z.object({
-  empregadora: z.string().min(2, 'Obrigatório'),
-  valor: z.number().min(0.01, 'Inválido'),
+  empregadora: z.string().optional(),
+  valor: z.union([z.number(), z.string(), z.nan()]).optional(),
 });
 
 export const registerSchema = z

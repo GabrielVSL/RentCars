@@ -11,8 +11,11 @@ import { ComoFuncionaSection } from '@/features/home/ComoFuncionaSection';
 import { ApexPaySection } from '@/features/home/ApexPaySection';
 import { BookingModal, Automovel } from '@/features/cars/components/BookingModal';
 import { api } from '@/services/api';
+import { useAuthStore } from '@/store/useAuthStore';
 
 export default function HomeLayout() {
+  const { user } = useAuthStore();
+  const showApexPay = !user || user.role === 'CLIENTE';
   const [cars, setCars] = useState<Automovel[]>([]);
   const [isLoadingCars, setIsLoadingCars] = useState(true);
   const [focusedBrand, setFocusedBrand] = useState<{ brand: string; seq: number } | null>(null);
@@ -63,8 +66,8 @@ export default function HomeLayout() {
         {/* 5. Como Funciona a Experiência (Regras Arrive & Drive) */}
         <ComoFuncionaSection />
 
-        {/* 6. Seção ApexPay (Cartão 3D, Tiers & Crédito de Pista) */}
-        <ApexPaySection />
+        {/* 6. Seção ApexPay (Cartão 3D, Tiers & Crédito de Pista) - Exclusiva para Pilotos/Clientes */}
+        {showApexPay && <ApexPaySection />}
       </main>
 
       <Footer />

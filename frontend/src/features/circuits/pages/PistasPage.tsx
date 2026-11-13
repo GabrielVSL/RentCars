@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { CIRCUITS, Circuit, CircuitLiveWeather, getCircuitLiveWeather } from '@/services/telemetryService';
+import { useAuthStore } from '@/store/useAuthStore';
 import { api } from '@/services/api';
 import { Automovel } from '@/features/booking/SessionBookingModal';
 import { resolveStudioCarImage, getCarDisplaySpecs } from '@/lib/carPresentation';
@@ -176,9 +178,18 @@ export default function PistasPage() {
     );
   }, [fleet, selectedCircuit.id]);
 
+  const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const isStaff = Boolean(user && user.role !== 'CLIENTE');
+  const staffTarget = user?.role === 'BANCO' ? '/analises' : '/frota';
+
   const activeWeather = weatherData[selectedCircuit.id] || null;
 
   const handleOpenBooking = (car?: Automovel) => {
+    if (isStaff) {
+      navigate(staffTarget);
+      return;
+    }
     setSelectedCarForBooking(car || null);
     setIsBookingOpen(true);
   };
@@ -362,16 +373,26 @@ export default function PistasPage() {
             )}
           </div>
 
-{/* Linha 6: Botão de Disponibilidade (Compacto com Ícone CalendarCheck e Alinhado à Direita) */}
+{/* Linha 6: Botão de Disponibilidade ou Gerenciamento (Alinhado à Direita) */}
           <div className="flex justify-end mb-2 max-w-xl shrink-0">
-            <button
-              type="button"
-              onClick={() => handleOpenBooking()}
-              className="flex items-center gap-1.5 bg-[#FF1717] hover:bg-[#e01414] text-white text-[11px] font-medium tracking-wider uppercase px-3.5 py-1.5 rounded-xl transition-all duration-200 cursor-pointer shadow-md shadow-[#FF1717]/20 hover:shadow-[#FF1717]/35 active:scale-[0.98]"
-            >
-              <CalendarCheck size={13} className="text-white" />
-              <span>Disponibilidade</span>
-            </button>
+            {isStaff ? (
+              <Link
+                to={staffTarget}
+                className="flex items-center gap-1.5 bg-white/10 hover:bg-[#FF1717] border border-white/15 hover:border-[#FF1717] text-white text-[11px] font-medium tracking-wider uppercase px-3.5 py-1.5 rounded-xl transition-all duration-200 shadow-md active:scale-[0.98]"
+              >
+                <CalendarCheck size={13} className="text-white" />
+                <span>{user?.role === 'BANCO' ? 'Painel de Auditoria' : 'Gerenciar nos Boxes'}</span>
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={() => handleOpenBooking()}
+                className="flex items-center gap-1.5 bg-[#FF1717] hover:bg-[#e01414] text-white text-[11px] font-medium tracking-wider uppercase px-3.5 py-1.5 rounded-xl transition-all duration-200 cursor-pointer shadow-md shadow-[#FF1717]/20 hover:shadow-[#FF1717]/35 active:scale-[0.98]"
+              >
+                <CalendarCheck size={13} className="text-white" />
+                <span>Disponibilidade</span>
+              </button>
+            )}
           </div>
 
           {/* Linha 7: O MAPA REAL INTERATIVO EMBUTIDO (Altura Flexível para preencher o espaço) */}
